@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+
+# VM
+venv/
+env/
+.venv/
+ENV/
+
+# Distribution
+build/
+dist/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.cache/
+
+# Logs / temp files
+*.log
+*.tmp
+
+# IDE / editors
+.vscode/
+.idea/
+
+# Linux
+*.out
+*.o
+*.so
