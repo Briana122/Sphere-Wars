@@ -1,5 +1,6 @@
 import pygame, random
-from training_game import Hexasphere, Game
+from training_game import Hexasphere #, Game
+from Game import Game
 
 def render(screen, game, width, height):
     screen.fill((10,10,20))
