@@ -1,0 +1,22 @@
+4010 Group Project Progress Report (Oct 15)
+
+Group 11: Sphere Wars
+
+Progress of group members in past two weeks:
+Briana:
+- Set up GitHub project repository and added all group members as project collaborators
+- Separated functions into class files to code improve readability (commit 005622d)
+Kiara:
+- Added .gitignore and requirements.txt (commits 1399691 and c654b28) and removed unnecessary virtual environment / python directories (commits 1164e3b and a64161a)
+Usman:
+- Set up GitHub issues for all tasks 
+Isen:
+- Committed initial hexasphere board structure (commit 05c4d6a)
+
+The whole group also finalized the game rules including states, actions and rewards. In general, we are on track with our Milestones. 
+
+Plan for the next two weeks:
+- Adapt current implementation to custom Gymnasium environment
+- Produce text file of all moves agent made
+- Fine tune game mechanics
+- Record environment demo
