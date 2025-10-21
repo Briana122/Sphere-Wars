@@ -1,6 +1,6 @@
 import pygame, random
-from training_game import Hexasphere #, Game
-from Game import Game
+from gymnasium_env.scripts.training_game import Hexasphere #, Game
+from game import Game, Piece, Tile
 
 def render(screen, game, width, height):
     screen.fill((10,10,20))
