@@ -1,6 +1,6 @@
 import random
-from Tile import Tile
-from Piece import Piece
+from .Tile import Tile
+from .Piece import Piece
 
 class Game:
     # the main game class, contains all logic for turns, moving pieces, spawning pieces, and checking victory conditions

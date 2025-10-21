@@ -1,33 +1,55 @@
-# Gymnasium Examples
-Some simple examples of Gymnasium environments and wrappers.
-For some explanations of these examples, see the [Gymnasium documentation](https://gymnasium.farama.org).
-
-### Environments
-This repository hosts the examples that are shown [on the environment creation documentation](https://gymnasium.farama.org/tutorials/gymnasium_basics/environment_creation/).
-- `GridWorldEnv`: Simplistic implementation of gridworld environment
-
-### Wrappers
-This repository hosts the examples that are shown [on wrapper documentation](https://gymnasium.farama.org/api/wrappers/).
-- `ClipReward`: A `RewardWrapper` that clips immediate rewards to a valid range
-- `DiscreteActions`: An `ActionWrapper` that restricts the action space to a finite subset
-- `RelativePosition`: An `ObservationWrapper` that computes the relative position between an agent and a target
-- `ReacherRewardWrapper`: Allow us to weight the reward terms for the reacher environment
-
-### Contributing
-If you would like to contribute, follow these steps:
-- Fork this repository
-- Clone your fork
-- Set up pre-commit via `pre-commit install`
-
-PRs may require accompanying PRs in [the documentation repo](https://github.com/Farama-Foundation/Gymnasium/tree/main/docs).
-
+## Sphere-Wars
+Sphere Wars: Reinforcement Learning for Territory Capture on a Hexasphere Board.
+This project uses a custom Gymnasium environment.
 
 ## Installation
+First, create a virtual environment:
+'''python
+python3 -m venv .venv
+source .venv/bin/activate
+'''
 
-To install your new environment, run the following commands:
+Then install the required dependencies:
+'''python
+pip install -r requirements.txt
+'''
 
-```{shell}
-cd gymnasium_env
-pip install -e .
-```
+## Usage
+To run a simple game with the rendering,
+'''python
+python3 -m scripts.play_game
+'''
 
+## Project Structure
+.
+├── README.md
+├── gymnasium_env
+│   ├── __init__.py
+│   ├── envs
+│   │   ├── __init__.py
+│   │   ├── game_env.py
+│   │   └── grid_world.py
+│   ├── game
+│   │   ├── Game.py
+│   │   ├── Piece.py
+│   │   ├── Tile.py
+│   │   ├── __init__.py
+│   │   └── visual_game.py
+│   ├── utils
+│   │   ├── __init__.py
+│   │   └── training_game.py
+│   └── wrappers
+│       ├── __init__.py
+│       ├── clip_reward.py
+│       ├── discrete_actions.py
+│       ├── reacher_weighted_reward.py
+│       └── relative_position.py
+├── progress_reports
+│   └── Progress_Report_Oct15.txt
+├── pyproject.toml
+├── requirements.txt
+├── scripts
+│   └── play_game.py
+└── tests
+    ├── test_envs.py
+    └── test_game.py

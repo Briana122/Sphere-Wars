@@ -1,8 +1,9 @@
 import math, numpy as np
 from collections import defaultdict
 
-from game.Game import Game
-from gymnasium_env.envs.grid_world_env import GridWorldEnv
+from ..game.Game import Game
+from ..game.Piece import Piece
+from ..game.Tile import Tile
 
 # core hexasphere generation
 # also contains util functions

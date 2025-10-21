@@ -1,3 +1,5 @@
+# Auto-generated file from copier
+
 from enum import Enum
 import gymnasium as gym
 from gymnasium import spaces
