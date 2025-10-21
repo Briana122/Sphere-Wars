@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import pygame
 
 from ..game.Game import Game
 from ..game.Piece import Piece
@@ -37,6 +38,12 @@ class GameEnv(gym.Env):
             self.W, self.H = 800, 800
             self.screen = pygame.display.set_mode((self.W, self.H))
 
+            # Camera state
+            self.cam_yaw = 0      # rotation around vertical axis
+            self.cam_pitch = 0    # rotation around horizontal axis
+            self.zoom = 1.0
+            self.last_mouse = None
+
     def reset(self, seed=None, options=None):
         """Start a new game and return the initial observation."""
 
@@ -70,11 +77,39 @@ class GameEnv(gym.Env):
         Note: only works in human mode
         """
 
-        if self.render_mode == "human":
-            import pygame
-            from ..game.visual_game import render
-            render(self.screen, self.game, self.W, self.H)
-            pygame.display.flip()
+        if self.render_mode != "human":
+            return
+
+        from ..game.visual_game import render
+
+        # Handle events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # left click
+                    self.last_mouse = pygame.mouse.get_pos()
+                elif event.button == 4:  # scroll up
+                    self.zoom = min(self.zoom * 1.1, 5.0)
+                elif event.button == 5:  # scroll down
+                    self.zoom = max(self.zoom * 0.9, 0.2)
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    self.last_mouse = None
+                    
+            elif event.type == pygame.MOUSEMOTION:
+                if self.last_mouse is not None:
+                    x, y = pygame.mouse.get_pos()
+                    dx, dy = x - self.last_mouse[0], y - self.last_mouse[1]
+                    self.cam_yaw += dx * 0.5
+                    self.cam_pitch += dy * 0.5
+                    self.cam_pitch = max(-90, min(90, self.cam_pitch))
+                    self.last_mouse = (x, y)
+
+        render(self.screen, self.game, self.W, self.H,
+            rx=self.cam_pitch, ry=self.cam_yaw)
 
     def _get_obs(self):
         """Return current observation of game"""
