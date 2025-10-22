@@ -3,16 +3,15 @@ Sphere Wars: Reinforcement Learning for Territory Capture on a Hexasphere Board.
 This project uses a custom Gymnasium environment.
 
 ## Installation
-First, create a virtual environment:
-'''python
-python3 -m venv .venv
-source .venv/bin/activate
-'''
+**Windows:**
+- *python -m venv .venv* to create the virtual enviornment
+- If using VS Code, use **Ctrl+Shift+P**, choose **Python: Select Interpreter** and then choose **Python 3.9.2 (.venv)**
+- Otherwise if using the terminal, navigate to the project directory and use *.\venv\Scripts\activate*
+- *python pip install -r requirements.txt* to install all required dependancies
 
-Then install the required dependencies:
-'''python
-pip install -r requirements.txt
-'''
+**Mac OS:**
+- *python python3 -m venv .venv source .venv/bin/activate* to create and activate virtual environment
+- *python pip install -r requirements.txt* to install all required dependancies
 
 ## Usage
 To run a simple game with the rendering,
@@ -21,7 +20,7 @@ python3 -m scripts.play_game
 '''
 
 ## Project Structure
-.
+```text
 ├── README.md
 ├── gymnasium_env
 │   ├── __init__.py
