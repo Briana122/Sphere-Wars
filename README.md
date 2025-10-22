@@ -4,7 +4,7 @@ This project uses a custom Gymnasium environment.
 
 ## Installation
 **Windows:**
-- *python -m venv .venv* to create the virtual enviornment
+- *python -m venv .venv* to create the virtual environment
 - If using VS Code, use **Ctrl+Shift+P**, choose **Python: Select Interpreter** and then choose **Python 3.9.2 (.venv)**
 - Otherwise if using the terminal, navigate to the project directory and use *.\venv\Scripts\activate*
 - *python pip install -r requirements.txt* to install all required dependencies

@@ -5,12 +5,11 @@ from .Piece import Piece
 from .Tile import Tile
 from ..utils.training_game import Hexasphere
 
-def render(screen, game, width, height, rx=0, ry=0):
-    # Updated from Isen's version to take mouse controls
-    
-    screen.fill((10,10,20))
+def render(screen, game, width, height, rx=0, ry=0, zoom=1.0):
+    screen.fill((10, 10, 20))
     hexs = game.hex
-    scale = 230
+    base_scale = 230    
+    scale = base_scale * zoom 
     cx, cy = width // 2, height // 2
 
     for tid, t in hexs.tiles.items():
@@ -18,23 +17,26 @@ def render(screen, game, width, height, rx=0, ry=0):
         if center[2] <= 0:
             continue
 
-        poly2d = [(cx + hexs.project(p, (rx, ry))[0] * scale,
-                   cy - hexs.project(p, (rx, ry))[1] * scale)
-                  for p in t["polygon3d"]]
+        poly2d = [
+            (cx + hexs.project(p, (rx, ry))[0] * scale,
+             cy - hexs.project(p, (rx, ry))[1] * scale)
+            for p in t["polygon3d"]
+        ]
         
         owner = game.tiles[tid].owner
-        color = (80,80,80) if owner is None else [(200,50,50),(50,150,250),(0,100,50),(200,50,250)][owner]
+        color = (80, 80, 80) if owner is None else [(200, 50, 50), (50, 150, 250), (0, 100, 50), (200, 50, 250)][owner]
         pygame.draw.polygon(screen, color, poly2d, 0)
-        pygame.draw.polygon(screen, (0,0,0), poly2d, 1)
+        pygame.draw.polygon(screen, (0, 0, 0), poly2d, 1)
 
-    for (aid,pid), piece in game.pieces.items():
+    for (aid, pid), piece in game.pieces.items():
         x, y, z = hexs.project(game.tiles[piece.tile_id].center3d, (rx, ry))
-        if z>0:
-            col = [(255,100,100),(100,180,255),(100,200,100),(255,100,255)][aid]
-            r = 6 if (aid,pid) != game.selected else 9
-            pygame.draw.circle(screen, col, (int(cx + x*scale), int(cy - y*scale)), r)
+        if z > 0:
+            col = [(255, 100, 100), (100, 180, 255), (100, 200, 100), (255, 100, 255)][aid]
+            r = 6 if (aid, pid) != game.selected else 9
+            pygame.draw.circle(screen, col, (int(cx + x * scale), int(cy - y * scale)), r)
 
     pygame.display.flip()
+
 
 def main():
     pygame.init()
