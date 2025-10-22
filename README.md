@@ -9,18 +9,14 @@ This project uses a custom Gymnasium environment.
 - Otherwise if using the terminal, navigate to the project directory and use *.\venv\Scripts\activate*
 - *python pip install -r requirements.txt* to install all required dependencies
 
-**MacOS:**
-- *python python3 -m venv .venv source .venv/bin/activate* to create and activate virtual environment
+**Linux:**
+- *python python3 -m venv .venv && source .venv/bin/activate* to create and activate virtual environment
 - *python pip install -r requirements.txt* to install all required dependencies
 
 ## Usage
 To run a simple game with the rendering,
+*python -m scripts.play_game*
 
-**Windows:**
-- *python -m scripts.play_game*
-
-**MacOS:**
-- *python python3 -m scripts.play_game*
 
 ## Project Structure
 ```text
