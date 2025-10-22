@@ -12,6 +12,7 @@ This project uses a custom Gymnasium environment.
 **Linux:**
 - *python python3 -m venv .venv && source .venv/bin/activate* to create and activate virtual environment
 - *python pip install -r requirements.txt* to install all required dependencies
+- *python pip install -e .* to run the setup
 
 ## Usage
 To run a simple game with the rendering,
