@@ -7,17 +7,20 @@ This project uses a custom Gymnasium environment.
 - *python -m venv .venv* to create the virtual enviornment
 - If using VS Code, use **Ctrl+Shift+P**, choose **Python: Select Interpreter** and then choose **Python 3.9.2 (.venv)**
 - Otherwise if using the terminal, navigate to the project directory and use *.\venv\Scripts\activate*
-- *python pip install -r requirements.txt* to install all required dependancies
+- *python pip install -r requirements.txt* to install all required dependencies
 
-**Mac OS:**
+**MacOS:**
 - *python python3 -m venv .venv source .venv/bin/activate* to create and activate virtual environment
-- *python pip install -r requirements.txt* to install all required dependancies
+- *python pip install -r requirements.txt* to install all required dependencies
 
 ## Usage
 To run a simple game with the rendering,
-'''python
-python3 -m scripts.play_game
-'''
+
+**Windows:**
+- *python -m scripts.play_game*
+
+**MacOS:**
+- *python python3 -m scripts.play_game*
 
 ## Project Structure
 ```text
