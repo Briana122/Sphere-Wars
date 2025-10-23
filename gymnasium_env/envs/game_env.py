@@ -9,6 +9,9 @@ from ..game.Piece import Piece
 from ..game.Tile import Tile
 from ..utils.training_game import Hexasphere
 
+# UI Import
+from ..game.UI import PlayerUI
+
 
 class GameEnv(gym.Env):
     """
@@ -51,6 +54,9 @@ class GameEnv(gym.Env):
             self.last_pos = None
 
             self.clock = pygame.time.Clock()
+
+            # This array contains a PlayerUI for each player.
+            self.stats_ui = [PlayerUI(player_index=p, font_size=18) for p in range(self.players)]
 
     def reset(self, seed=None, options=None):
         """Start a new game and return the initial observation."""
@@ -107,7 +113,19 @@ class GameEnv(gym.Env):
 
         render(self.screen, self.game, self.W, self.H, rx=self.cam_pitch, ry=self.cam_yaw, zoom=self.zoom)
 
+        # Draw the ui for each player in the stats_ui array.
+        for playerUI in self.stats_ui:
+            playerUI.draw_player_stats(self.screen, self.game)
+
         self.clock.tick(self.metadata["render_fps"])
+
+        # Update the display
+        # Note: There was a pygame.display.flip() in visual_game.py's render function.
+        # However, I think it's best to call pygame.display.update() here after doing everything that needs to be done.
+        # Otherwise I'd have to add all the player UI drawing stuff in visual_game.py which i don't know if that's the best idea.
+        # But we can always change it later if needed.
+        pygame.display.update()
+        
 
     def _get_obs(self):
         """Return current observation of game."""

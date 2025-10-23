@@ -35,8 +35,6 @@ def render(screen, game, width, height, rx=0, ry=0, zoom=1.0):
             r = 6 if (aid, pid) != game.selected else 9
             pygame.draw.circle(screen, col, (int(cx + x * scale), int(cy - y * scale)), r)
 
-    pygame.display.flip()
-
 
 def main():
     pygame.init()
