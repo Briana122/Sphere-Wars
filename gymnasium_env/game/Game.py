@@ -1,6 +1,7 @@
 import random
 from .Tile import Tile
 from .Piece import Piece
+from .Player import Player
 
 class Game:
     # the main game class, contains all logic for turns, moving pieces, spawning pieces, and checking victory conditions
@@ -11,6 +12,7 @@ class Game:
         self.tiles = {vi: Tile(vi,t["center"]) for vi,t in hexs.tiles.items()}
         self.resources = {p:0 for p in range(players)}
         self.pieces = {}
+        # create first piece per player
         for p in range(players):
             for pid in range(pieces_per):
                 free = [t for t in self.tiles if self.tiles[t].piece is None]
@@ -20,9 +22,8 @@ class Game:
                 self.tiles[start].piece = (p,pid)
                 self.tiles[start].owner = p
                 self.resources[p]+=self.tiles[start].resources
+
         self.current_player = 0
-        self.selected = None
-        self.rot = [0,0]
         self.winner = None
         self.episode_log = []  # store transitions for RL
 
@@ -57,24 +58,6 @@ class Game:
             "resources": dict(self.resources),
             "winner": self.winner
         })
-
-    def step_ai(self, agent):
-        if self.winner is not None: return
-        ai_pieces = [x for x in self.pieces.values() if x.agent == agent]
-        for piece in ai_pieces:
-            moves = self.legal_moves(piece)
-            if moves:
-                dest = random.choice(moves)
-                self.move(piece, dest)
-                if self.winner is not None:
-                    return
-        spawn_cost = 10
-        while self.resources[agent] >= spawn_cost:
-            spawned = self.spawn_piece(agent, spawn_cost)
-            if not spawned:
-                break
-            if self.winner is not None:
-                return
 
     def spawn_piece(self, agent, cost):
         # some basic logic for spawning new pieces, can only spawn on owned tiles that are unoccupied
