@@ -92,3 +92,5 @@ class PlayerUI:
         for s in text_surfs:
             surface.blit(s, (x + self.margin, yy))
             yy += s.get_height() + self.margin
+
+

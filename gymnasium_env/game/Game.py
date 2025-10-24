@@ -51,7 +51,6 @@ class Game:
         if target.owner != piece.agent:
             target.owner = piece.agent
             self.resources[piece.agent] += target.resources
-            target.resources = 0
             self.check_victory(piece.agent)
         # store state transition for RL
         self.episode_log.append({
