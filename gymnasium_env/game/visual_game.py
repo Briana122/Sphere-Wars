@@ -28,6 +28,13 @@ def render(screen, game, width, height, rx=0, ry=0, zoom=1.0):
         pygame.draw.polygon(screen, color, poly2d, 0)
         pygame.draw.polygon(screen, (0, 0, 0), poly2d, 1)
 
+        # Draw resource count on tile
+        font = pygame.font.SysFont(None, 24)
+        text = font.render(str(game.tiles[tid].resources), True, (255, 255, 255))
+        text_rect = text.get_rect(center=(cx + center[0] * scale, cy - center[1] * scale))
+        screen.blit(text, text_rect)
+        
+
     for (aid, pid), piece in game.pieces.items():
         x, y, z = hexs.project(game.tiles[piece.tile_id].center3d, (rx, ry))
         if z > 0:
