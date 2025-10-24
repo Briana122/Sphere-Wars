@@ -14,6 +14,8 @@ piece_keys = list(env.game.pieces.keys())
 print("Valid piece IDs:", piece_keys)
 
 while not done:
+    # Keep updated list of pieces
+    piece_keys = list(env.game.pieces.keys())
     for piece_index, piece_id in enumerate(piece_keys):
         piece = env.game.pieces[piece_id]
 

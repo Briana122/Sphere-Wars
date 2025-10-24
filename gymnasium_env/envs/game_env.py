@@ -114,6 +114,9 @@ class GameEnv(gym.Env):
         terminated = self.game.winner is not None
         truncated = False
 
+        if terminated:
+            print(f"Winner is agent {piece.agent}")
+
         # Return updated observation
         obs = self._get_obs()
         return obs, reward, terminated, truncated, {}
