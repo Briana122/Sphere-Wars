@@ -26,13 +26,22 @@ class GameEnv(gym.Env):
         self.game = None
         self.players = players
         self.pieces_per = pieces_per
+        self.max_pieces = self.pieces_per * self.players * 5
         self.render_mode = render_mode
         self.subdiv = subdiv
 
         temp_hex = Hexasphere(subdiv=self.subdiv)
         self.num_tiles = len(temp_hex.tiles)
 
-        self.action_space = spaces.Discrete(self.num_tiles)
+        # self.action_space = spaces.Discrete(self.num_tiles)
+
+        # Each action can be either a move (piece_id, dest_tile) or a spawn command
+        
+        self.action_space = spaces.Tuple((
+            spaces.Discrete(self.max_pieces),
+            spaces.Discrete(self.num_tiles),
+            spaces.Discrete(2)
+        ))
 
         self.observation_space = spaces.Dict({
             "ownership": spaces.Box(low=-1, high=players, shape=(self.num_tiles,), dtype=np.int32),
@@ -62,22 +71,53 @@ class GameEnv(gym.Env):
         """Start a new game and return the initial observation."""
         hex_map = Hexasphere(subdiv=self.subdiv)
         self.game = Game(hex_map, players=self.players, pieces_per=self.pieces_per)
+        self.game.current_player = 0
         obs = self._get_obs()
         return obs, {}
 
     def step(self, action):
-        """Execute one environment step."""
-        piece_id, dest = action
-        piece = self.game.pieces[piece_id]
-        self.game.move(piece, dest)
-
+        """Take an action = (piece_id, dest_tile, action_type)."""
         reward = 0
+
+        # Unpack action
+        piece_id, dest, action_type = action
+
+        # Check valid piece index
+        piece_keys = list(self.game.pieces.keys())
+        if piece_id < 0 or piece_id >= len(piece_keys):
+            return self._get_obs(), reward, False, False, {}
+
+        # Get the piece object
+        piece_key = piece_keys[piece_id]
+        piece = self.game.pieces[piece_key]
+
+        
+        if action_type == 0:
+            # MOVE action
+            print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} ")
+            before_owner = self.game.tiles[dest].owner
+            self.game.move(piece, dest)
+            after_owner = self.game.tiles[dest].owner
+
+            # Reward if new tile captured
+            if before_owner != after_owner and after_owner == piece.agent:
+                reward += 1
+
+        elif action_type == 1:
+            # SPAWN action (only if enough resources)
+            cost = 10
+            if self.game.resources[piece.agent] >= cost:
+                print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} ")
+                spawned = self.game.spawn_piece(piece.agent, cost=cost)
+
+        # Check for game termination
         terminated = self.game.winner is not None
         truncated = False
 
+        # Return updated observation
         obs = self._get_obs()
-        info = {}
-        return obs, reward, terminated, truncated, info
+        return obs, reward, terminated, truncated, {}
+
 
     def render(self):
         """Render the current game state."""
