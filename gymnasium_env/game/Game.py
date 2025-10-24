@@ -1,6 +1,7 @@
 import random
 from .Tile import Tile
 from .Piece import Piece
+from .Player import Player
 
 class Game:
     # the main game class, contains all logic for turns, moving pieces, spawning pieces, and checking victory conditions
@@ -8,11 +9,16 @@ class Game:
     # can be scaled up for more players very easily, just need to implement proper turn ordering
     def __init__(self, hexs, players=2, pieces_per=1):
         self.hex, self.players = hexs, players
+        self.players = players
         self.tiles = {vi: Tile(vi,t["center"]) for vi,t in hexs.tiles.items()}
         self.resources = {p:0 for p in range(players)}
         self.pieces = {}
+
+        self.player_data = [Player(p) for p in range(players)]
+
         # create first piece per player
         for p in range(players):
+            self.player_data[p].add_piece((p, 0))  # Add Piece to Player Class
             for pid in range(pieces_per):
                 free = [t for t in self.tiles if self.tiles[t].piece is None]
                 start = random.choice(free)
@@ -45,12 +51,17 @@ class Game:
         old.piece = None
         piece.tile_id = dest
         target = self.tiles[dest]
+
         if target.piece and target.piece[0] != piece.agent:
             del self.pieces[target.piece]
+
         target.piece = (piece.agent, piece.pid)
+
         if target.owner != piece.agent:
             target.owner = piece.agent
+            self.player_data[piece.agent].add_tile(dest)
             self.resources[piece.agent] += target.resources
+            self.player_data[piece.agent].set_resources(self.resources[piece.agent])
             self.check_victory(piece.agent)
         # store state transition for RL
         self.episode_log.append({
@@ -72,6 +83,12 @@ class Game:
         self.pieces[(agent, pid)] = new_piece
         tile.piece = (agent, pid)
         self.resources[agent] -= cost
+        print(f"Pre-Add Piece: ")
+        print(f"Agent: {agent} \t Action: Spawn \t Resources: {self.player_data[agent].acqumilated_resources} ")
+        self.player_data[agent].add_piece(pid)
+        self.player_data[agent].set_resources(self.resources[agent])
+        print(f"Added Piece: ")
+        print(f"Agent: {agent} \t Action: Spawn \t Resources: {self.player_data[agent].acqumilated_resources} ")
         self.check_victory(agent)
         return True
 

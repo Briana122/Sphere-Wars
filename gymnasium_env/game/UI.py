@@ -1,4 +1,5 @@
 import pygame
+from .Player import Player
 
 # PlayerUI Class:
 # This Class displays information about an individual player in the game.
@@ -18,28 +19,20 @@ class PlayerUI:
         self.column_spacing = column_spacing
     
     def compute_tile_count(self, game):
-        count = 0
         # Check all tiles to see if they are owned by this playr.
         # Note: The way I do it right now checks every single tile in the game.
         # This can be really bad performance wise if there's a lot of tiles.
         # I think we should make the player keep track of what tiles they own, unless it's already there and I'm dumb.
-        for tile in game.tiles.values():
-            if tile.owner == self.player_index:
-                count += 1
-        return count
+        return game.player_data[self.player_index].num_tiles_owned
 
     def compute_resource_count(self, game):
         # Note: Shouldn't the player have a resources attribute instead of me having to access the game's resources?
         # This was a bit confusing to figure out unless again I'm missing something again.
-        return game.resources.get(self.player_index, 0)
+        return game.player_data[self.player_index].acqumilated_resources
     
     def compute_piece_count(self, game):
         # Same here, shouldn't the player have a pieces attribute?
-        count = 0
-        for (aid, pid), piece in game.pieces.items():
-            if aid == self.player_index:
-                count += 1
-        return count
+        return game.player_data[self.player_index].num_pieces_owned
     
     # This is what the lines will look like when drawn on the screen.
     def format_lines(self, game):
