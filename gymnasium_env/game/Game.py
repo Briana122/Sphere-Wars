@@ -12,6 +12,7 @@ class Game:
         self.tiles = {vi: Tile(vi,t["center"]) for vi,t in hexs.tiles.items()}
         self.resources = {p:0 for p in range(players)}
         self.pieces = {}
+        # create first piece per player
         for p in range(players):
             for pid in range(pieces_per):
                 free = [t for t in self.tiles if self.tiles[t].piece is None]
@@ -21,9 +22,8 @@ class Game:
                 self.tiles[start].piece = (p,pid)
                 self.tiles[start].owner = p
                 self.resources[p]+=self.tiles[start].resources
+
         self.current_player = 0
-        self.selected = None
-        self.rot = [0,0]
         self.winner = None
         self.episode_log = []  # store transitions for RL
 

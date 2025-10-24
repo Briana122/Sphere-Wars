@@ -6,7 +6,6 @@ import math
 
 from ..game.Game import Game
 from ..game.Piece import Piece
-from ..game.Tile import Tile
 from ..utils.training_game import Hexasphere
 
 # UI Import
@@ -91,8 +90,16 @@ class GameEnv(gym.Env):
         piece_key = piece_keys[piece_id]
         piece = self.game.pieces[piece_key]
 
-        
-        if action_type == 0:
+        # if spawn fails, then choose move action
+        spawned = True
+        if action_type == 1:
+            # SPAWN action (only if enough resources)
+            cost = 10
+            if self.game.resources[piece.agent] >= cost:
+                print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} ")
+                spawned = self.game.spawn_piece(piece.agent, cost=cost)
+
+        if action_type == 0 or not spawned:
             # MOVE action
             print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} ")
             before_owner = self.game.tiles[dest].owner
@@ -102,13 +109,6 @@ class GameEnv(gym.Env):
             # Reward if new tile captured
             if before_owner != after_owner and after_owner == piece.agent:
                 reward += 1
-
-        elif action_type == 1:
-            # SPAWN action (only if enough resources)
-            cost = 10
-            if self.game.resources[piece.agent] >= cost:
-                print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} ")
-                spawned = self.game.spawn_piece(piece.agent, cost=cost)
 
         # Check for game termination
         terminated = self.game.winner is not None
