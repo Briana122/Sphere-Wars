@@ -1,7 +1,6 @@
 import random
 from .Tile import Tile
 from .Piece import Piece
-from .Player import Player
 
 class Game:
     # the main game class, contains all logic for turns, moving pieces, spawning pieces, and checking victory conditions
@@ -24,6 +23,8 @@ class Game:
                 self.resources[p]+=self.tiles[start].resources
 
         self.current_player = 0
+        self.selected = None
+        self.rot = [0,0]
         self.winner = None
         self.episode_log = []  # store transitions for RL
 
