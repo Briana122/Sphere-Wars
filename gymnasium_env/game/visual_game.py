@@ -24,16 +24,19 @@ def render(screen, game, width, height, rx=0, ry=0, zoom=1.0):
         ]
         
         owner = game.tiles[tid].owner
-        color = (80, 80, 80) if owner is None else [(200, 50, 50), (50, 150, 250), (0, 100, 50), (200, 50, 250)][owner]
+        base_color = (80, 80, 80) if owner is None else [(200, 50, 50), (50, 150, 250), (0, 100, 50), (200, 50, 250)][owner]
+
+        res = game.tiles[tid].resources
+        res_factor = min(max(res * 0.12, -1), 1)  
+        # 0.01 = change per resource unit, clamp to [-1, 1]
+
+        color = tuple(
+            max(0, min(255, int(c * (1 + res_factor))))
+            for c in base_color
+        )
+
         pygame.draw.polygon(screen, color, poly2d, 0)
         pygame.draw.polygon(screen, (0, 0, 0), poly2d, 1)
-
-        # Draw resource count on tile
-        font = pygame.font.SysFont(None, 24)
-        text = font.render(str(game.tiles[tid].resources), True, (255, 255, 255))
-        text_rect = text.get_rect(center=(cx + center[0] * scale, cy - center[1] * scale))
-        screen.blit(text, text_rect)
-        
 
     for (aid, pid), piece in game.pieces.items():
         x, y, z = hexs.project(game.tiles[piece.tile_id].center3d, (rx, ry))
@@ -61,43 +64,3 @@ def main():
                 if e.button==1:
                     dragging=True
                     last_pos=e.pos
-                elif e.button==3:
-                    mx,my=e.pos
-                    sel=None
-                    for (aid,pid),p in game.pieces.items():
-                        x,y,z=hexs.project(game.tiles[p.tile_id].center3d,(game.rot[0],game.rot[1]))
-                        if z>0:
-                            px,py=W//2+x*230,H//2-y*230
-                            if (mx-px)**2+(my-py)**2<100:
-                                if aid==game.current_player:
-                                    sel=(aid,pid)
-                    game.selected=sel
-            elif e.type==pygame.MOUSEBUTTONUP and e.button==1:
-                dragging=False
-            elif e.type==pygame.MOUSEMOTION and dragging:
-                dx,dy=e.rel
-                game.rot[1]+=dx*0.01
-                game.rot[0]+=dy*0.01
-            elif e.type==pygame.KEYDOWN:
-                if e.key==pygame.K_ESCAPE: running=False
-                if e.key==pygame.K_SPACE:
-                    ai = 1-game.current_player
-                    game.step_ai(ai)
-                    if game.winner is not None:
-                        running = False
-                    else:
-                        game.current_player = ai if game.current_player==0 else 0
-                if e.key==pygame.K_RETURN and game.selected:
-                    p = game.pieces[game.selected]
-                    moves = game.legal_moves(p)
-                    if moves:
-                        dest = random.choice(moves)
-                        game.move(p, dest)
-                        if game.winner is not None:
-                            running = False
-        render(screen,game,W,H)
-        clock.tick(30)
-    pygame.quit()
-
-if __name__=="__main__":
-    main()
