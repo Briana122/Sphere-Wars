@@ -6,7 +6,8 @@ Progress of group members in past two weeks:
 Briana:
 - Added implementation for spawning multiple pieces as an action
 - Printed out each turn into the command line for traceability of agent's moves
-- Drafted environment demo script and organized environment demo structure
+- Drafted environment demo script and slides
+- Organized environment demo structure
 Kiara:
 - Adapt initial implementation to custom Gym environment
 Isen:
@@ -16,7 +17,7 @@ Usman:
 - Implemented UI changes to view resources, number of tiles captured, and number of pieces per player
 - Edited environment demo video
 
-The whole group also finalized the game rules including states, actions and rewards. In general, we are on track with our Milestones. 
+Each group member recorded their own piece of the environment demo. In general, we are on track with our Milestones. 
 
 Plan for the next two weeks:
 - Implement initial reinforcement learning algorithm for agent
