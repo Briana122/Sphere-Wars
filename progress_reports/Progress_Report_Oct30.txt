@@ -9,7 +9,10 @@ Briana:
 - Drafted environment demo script and slides
 - Organized environment demo structure
 Kiara:
-- Adapt initial implementation to custom Gym environment
+- Adapted initial implementation to custom Gym environment (commit 7144d28)
+  - Created a GameEnv class to define the Gym environment
+  - Created a play_game script to run the implementation
+- Updated installation instructions for Linux environments (commit 3e31e9b)
 Isen:
 - Implemented gradient tile colouring to indicate resource-intensity in each tile
 Usman:
