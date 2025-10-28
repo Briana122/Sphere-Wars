@@ -4,8 +4,8 @@ Group 11: Sphere Wars
 
 Progress of group members in past two weeks:
 Briana:
-- Added implementation for spawning multiple pieces as an action
-- Printed out each turn into the command line for traceability of agent's moves
+- Added implementation for spawning multiple pieces as an action (commit 2200f82)
+- Printed out each turn into the command line for traceability of agent's moves (commit d02898a)
 - Drafted environment demo script and slides
 - Organized environment demo structure
 Kiara:
@@ -14,10 +14,10 @@ Kiara:
   - Created a play_game script to run the implementation
 - Updated installation instructions for Linux environments (commit 3e31e9b)
 Isen:
-- Implemented gradient tile colouring to indicate resource-intensity in each tile
+- Implemented gradient tile colouring to indicate resource-intensity in each tile (commit db3f045)
 Usman:
 - Created Player class
-- Implemented UI changes to view resources, number of tiles captured, and number of pieces per player
+- Implemented UI changes to view resources, number of tiles captured, and number of pieces per player (commit d682a2b)
 - Edited environment demo video
 
 Each group member recorded their own piece of the environment demo. In general, we are on track with our Milestones. 
