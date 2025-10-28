@@ -1,0 +1,24 @@
+4010 Group Project Progress Report (Oct 30)
+
+Group 11: Sphere Wars
+
+Progress of group members in past two weeks:
+Briana:
+- Added implementation for spawning multiple pieces as an action
+- Printed out each turn into the command line for traceability of agent's moves
+- Drafted environment demo script and organized environment demo structure
+Kiara:
+- Adapt initial implementation to custom Gym environment
+Isen:
+- Implemented gradient tile colouring to indicate resource-intensity in each tile
+Usman:
+- Created Player class
+- Implemented UI changes to view resources, number of tiles captured, and number of pieces per player
+- Edited environment demo video
+
+The whole group also finalized the game rules including states, actions and rewards. In general, we are on track with our Milestones. 
+
+Plan for the next two weeks:
+- Implement initial reinforcement learning algorithm for agent
+- Train agent against opponent playing with random policy 
+- Fine-tune hyperparameters 
