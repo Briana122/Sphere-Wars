@@ -1,6 +1,7 @@
 import random
 from .Tile import Tile
 from .Piece import Piece
+from .Player import Player
 
 class Game:
     # the main game class, contains all logic for turns, moving pieces, spawning pieces, and checking victory conditions
@@ -11,6 +12,8 @@ class Game:
         self.tiles = {vi: Tile(vi,t["center"]) for vi,t in hexs.tiles.items()}
         self.resources = {p:0 for p in range(players)}
         self.pieces = {}
+        self.player_objs = [Player(p) for p in range(players)]  # concrete Player objects
+
         # create first piece per player
         for p in range(players):
             for pid in range(pieces_per):
@@ -20,7 +23,10 @@ class Game:
                 self.pieces[(p,pid)] = piece
                 self.tiles[start].piece = (p,pid)
                 self.tiles[start].owner = p
+                self.player_objs[p].add_piece(pid)
+                self.player_objs[p].add_tile(start)
                 self.resources[p]+=self.tiles[start].resources
+                self.player_objs[p].acqumilated_resources += self.tiles[start].resources
 
         self.current_player = 0
         self.selected = None
@@ -41,39 +47,12 @@ class Game:
         return legal
 
     def move(self, piece, dest):
-        old = self.tiles[piece.tile_id]
-        old.piece = None
-        piece.tile_id = dest
-        target = self.tiles[dest]
-        if target.piece and target.piece[0] != piece.agent:
-            del self.pieces[target.piece]
-        target.piece = (piece.agent, piece.pid)
-        if target.owner != piece.agent:
-            target.owner = piece.agent
-            self.resources[piece.agent] += target.resources
-            self.check_victory(piece.agent)
-        # store state transition for RL
-        self.episode_log.append({
-            "agent": piece.agent,
-            "action": dest,
-            "resources": dict(self.resources),
-            "winner": self.winner
-        })
+        if dest not in self.legal_moves(piece): 
+            return
+        return self.player_objs[piece.agent].move(piece, dest, self)
 
     def spawn_piece(self, agent, cost):
-        # some basic logic for spawning new pieces, can only spawn on owned tiles that are unoccupied
-        owned_free = [t for t in self.tiles.values() if t.owner == agent and t.piece is None]
-        if not owned_free:
-            return False
-        tile = random.choice(owned_free)
-        existing = [pid for (a, pid) in self.pieces if a == agent]
-        pid = max(existing, default=-1) + 1
-        new_piece = Piece(agent, pid, tile.id)
-        self.pieces[(agent, pid)] = new_piece
-        tile.piece = (agent, pid)
-        self.resources[agent] -= cost
-        self.check_victory(agent)
-        return True
+        return self.player_objs[agent].spawn_piece(cost, self)
 
     def check_victory(self, last_agent=None):
         # basic victory check of if the agent owns half or more of the tiles

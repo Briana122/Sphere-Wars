@@ -9,7 +9,7 @@ from ..game.Piece import Piece
 from ..utils.training_game import Hexasphere
 
 # UI Import
-from ..game.UI import PlayerUI
+from ..game.PlayerUI import PlayerUI
 
 
 class GameEnv(gym.Env):
