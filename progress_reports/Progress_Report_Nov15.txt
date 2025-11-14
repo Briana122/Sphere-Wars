@@ -8,7 +8,7 @@ Once these plans are completed by each group member, we will implement them and 
 Please see the folder RL_model_plans/ to see each plan.
 
 Briana:
-- Created plan for a Q-Learning model with Function Approximation that uses self-play
+- Created plan for a Q-Learning model with Function Approximation that uses self-play (commit 67e1d5d)
 Kiara:
 - Created plan for a Deep Q-Network model that uses self-play (commit c1d4361).
 Usman:
