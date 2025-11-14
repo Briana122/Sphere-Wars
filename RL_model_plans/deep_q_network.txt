@@ -1,0 +1,33 @@
+Deep Q-Network Reinforcement Learning Model
+
+Reasoning:
+The structure of SphereWars is a finite discrete state space with only two initial players. It also operates in turns.
+A Deep Q-Network (DQN) model will be a good fit for this project since the state can be encoded just as a vector.
+The vector will inclide tile ownership, piece locations and the resources.
+DQN models work well for this type of tile-based environment and is not a complicated type of model to implement,
+given that we already have the code setup well for it.
+
+This DQN could be implemented with a small Multilayer Perceptron (MLP), and ReLU.
+Illegal actions should be masked so that the model abides by the rules set in the game. To mask the illegal actions,
+the Q-value can be set to negative infinity before the selection.
+
+
+Reward System:
+The agent should be rewarded the most for winning the game, and the least for losing.
+When capturing a tile, the agent should recieve a small reward. For example, +1. If it is an enemy piece, the agent
+should be also rewarded with +1.
+On each move, the agent should have either zero reward, or a small negative value like -0.01 so that it prioitizes
+capturing new tiles over just iterating over tiles it already has.
+
+
+Simple Pseudocode of Training Loop:
+1. The whole game should be reset to a blank slate. Get the state s.
+2. For each step:
+    - Agent chooses the action with epsilon-greedy policy from Q(s).
+    - This action is executed in the Game class.
+    - Get the next state s', the reward r, and a flag to signal that an action has been taken.
+    - Store the parameters (s, a, r, s', flag).
+    - Sample mini-batch and train the Q-Network.
+3. Continue until game ends.
+4. Switch players for self-play.
+5. Repeat.
