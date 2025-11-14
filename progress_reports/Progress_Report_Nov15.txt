@@ -1,0 +1,22 @@
+4010 Group Project Progress Report (Oct 15)
+
+Group 11: Sphere Wars
+
+Progress of group members in past two weeks:
+Each group member has been creating a plan for a reinforcement learning model to implement.
+Once these plans are completed by each group member, we will implement them and have four RL models to compare.
+Please see the folder RL_model_plans/ to see each plan.
+
+Briana:
+- Created plan for __
+Kiara:
+- Created plan for a Deep Q-Network model that uses self-play.
+Usman:
+- Created a plan for __
+Isen:
+- Created a plan for __
+
+Plan for the next two weeks:
+- Complete RL model plans
+- Implement these RL models
+- Compare the four models
