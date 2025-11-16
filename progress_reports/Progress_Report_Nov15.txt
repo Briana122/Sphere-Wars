@@ -12,7 +12,7 @@ Briana:
 Kiara:
 - Created plan for a Deep Q-Network model that uses self-play (commit c1d4361).
 Usman:
-- Created a plan for __
+- Finished Implementation for Player Class, anyone can take control of the game (be it player or agent) as long as they give the appropritate input
 Isen:
 - Created a plan for __
 
