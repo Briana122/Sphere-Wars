@@ -1,0 +1,34 @@
+Policy-Value Monte Carlo Tree Search Reinforcement Learning Model
+
+Reasoning:
+
+A policy-value Monty Carlo Tree Search (MCTS) model is suitable for SphereWars because the game is discrete, turnbased, finite, and requires longterm strategic planning over many turns, often with delayed action consequences. 
+As shown in implementations like Alpha-Go, this method is capable of achieving stellar results in this type of environment.
+The method combines a neural network (NN) with guided tree search to evaluate future move sequences during gameplay. 
+
+The NN takes the full encoded game state as input (tile ownership, piece positions, and resources) and outputs two items:
+    - A policy vector representing the probability of selecting each possible action
+    - A value estimate representing how favourable the current position is for the player
+
+MCTS uses these outputs to simulate possible action sequences. Repeated, the search process forms an improved estimate of which actions are most promising.
+Illegal actions are excluded during search, MCTS only expands and evaluates the branches corresponding to valid game moves.
+
+Reward System:
+
+The reward structure will remain as outlined in the project demo. The agent receives +1 for capturing a tile, and 0 0therwise. *I think there should also be a reward for winning and losing, discuss with team
+
+Simple Pseudocode of Training Loop:
+1. Initialize a neural network that outputs a policy distribution over actions and a value estimate of the current state
+2. Begin each training iteration with many self-play games
+3. For each turn in a self-play game:
+    - Run MCTS simulations from the current position
+    - Use the search results to obtain an improved policy distribution
+    - Select an action according to this improved policy and apply it in the environment
+    - Observe reward, +1 if capturing tile other wise +0
+    - Record (state, improved policy, current player)
+4. When the game ends:
+    - Convert the rewards into cumulative returns for each state
+    - Sample batches of (state, improved policy, outcome) to train the network:
+    - Train the policy head to match the improved policy from MCTS
+    - Train the value head to match the final outcome of the game
+5. Repeat
