@@ -93,8 +93,11 @@ class Player:
             return False
 
         # Give this piece the next pid
-        existing = [pid for (a, pid) in game.pieces if a == self.player_id]
-        pid = (max(existing) + 1) if existing else 0
+        existing = [pid for (a, pid) in game.pieces.keys() if a == self.player_id]
+        if not existing:
+            pid = 0
+        else:
+            pid = max(existing) + 1
 
         # Choose random tile
         tile = random.choice(owned_free)

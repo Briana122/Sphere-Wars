@@ -2,47 +2,60 @@ import random
 import time
 from gymnasium_env.envs.game_env import GameEnv
 
-env = GameEnv(players=2, pieces_per=1, render_mode="human")
-obs, _ = env.reset()
+def main():
+    env = GameEnv(players=2, pieces_per=1, render_mode="human")
+    obs, _ = env.reset()
 
-done = False
+    done = False
 
-# Change based on board size
-tile_count = 100
+    while not done:
+        game = env.game
+        current = game.current_player
 
-piece_keys = list(env.game.pieces.keys())
-print("Valid piece IDs:", piece_keys)
+        piece_keys = [
+            key for key in game.pieces.keys()
+            if key[0] == current and not game.moved_flags[current].get(key[1], False)
+        ]
 
-while not done:
-    # Keep updated list of pieces
-    piece_keys = list(env.game.pieces.keys())
-    for piece_index, piece_id in enumerate(piece_keys):
-        piece = env.game.pieces[piece_id]
-
-        legal_moves = env.game.legal_moves(piece) # follow the game rules
-        if not legal_moves:
+        if len(piece_keys) == 0:
+            game.end_turn()
             continue
 
-        # Chooses a random move
-        dest = random.choice(legal_moves)
-        # action = (piece_id, dest)
+        agent, pid = random.choice(piece_keys)
+        piece = game.pieces[(agent, pid)]
 
-        # # Policy: spawn if enough resources, else move
-        if env.game.resources[piece.agent] >= 10:
-            action_type = 1  # spawn
+        legal_moves = game.legal_moves(piece)
+
+        if not legal_moves:
+            game.moved_flags[agent][pid] = True
+            continue
+
+        cost = 10
+        can_spawn = (game.resources[current] >= cost)
+
+        if can_spawn:
+            action_type = 1
+            dest = 0  
         else:
-            action_type = 0  # move
+            action_type = 0
+            dest = random.choice(legal_moves)
 
-        # action_type = random.choice([0, 1])
+
+        all_piece_keys = list(game.pieces.keys())
+        piece_index = all_piece_keys.index((agent, pid))
 
         action = (piece_index, dest, action_type)
 
         obs, reward, terminated, truncated, info = env.step(action)
         env.render()
-        time.sleep(0.1) # my eyes!
+        time.sleep(0.02)
 
         if terminated or truncated:
+            print("Game Over! Winner:", game.winner)
             done = True
             break
 
-env.close()
+    env.close()
+
+if __name__ == "__main__":
+    main()

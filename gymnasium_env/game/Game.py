@@ -29,14 +29,35 @@ class Game:
                 self.player_objs[p].acqumilated_resources += self.tiles[start].resources
 
         self.current_player = 0
+        self.moved_flags = {p: {} for p in range(players)}
+        for (agent, pid), piece in self.pieces.items():
+            self.moved_flags[agent][pid] = False
+
+
         self.selected = None
         self.rot = [0,0]
         self.winner = None
         self.episode_log = []  # store transitions for RL
 
+    def reset_turn(self, player_id):
+        flags = self.moved_flags.get(player_id)
+        if flags is None:
+            return
+        for pid in flags:
+            flags[pid] = False
+
+    def end_turn(self):
+        # switch to the next player and reset their movement flags
+        self.current_player = (self.current_player + 1) % self.players
+        self.reset_turn(self.current_player)
+
     def legal_moves(self, piece):
         # return list of legal tile ids the piece can move to, will need to be fine tuned
         # currently can only move to tile already owned or unoccupied tiles
+        agent_flags = self.moved_flags.get(piece.agent, {})
+        if agent_flags.get(piece.pid, False):
+            return []
+
         current_id = piece.tile_id
         neighbors = self.hex.tiles[current_id]["neighbors"]
         legal = [current_id]
@@ -47,12 +68,29 @@ class Game:
         return legal
 
     def move(self, piece, dest):
+
+        if self.moved_flags[piece.agent].get(piece.pid, False):
+            return False
         if dest not in self.legal_moves(piece): 
-            return
+            return False
+        self.moved_flags.setdefault(piece.agent, {})
+        self.moved_flags[piece.agent][piece.pid] = True
+
         return self.player_objs[piece.agent].move(piece, dest, self)
 
     def spawn_piece(self, agent, cost):
-        return self.player_objs[agent].spawn_piece(cost, self)
+        if agent != self.current_player:
+            return False
+        result = self.player_objs[agent].spawn_piece(cost, self)
+
+        if result:
+            pids = [pid for (a, pid) in self.pieces.keys() if a == agent]
+            new_pid = max(pids)
+            self.moved_flags.setdefault(agent, {})
+            self.moved_flags[agent][new_pid] = False
+
+
+        return result
 
     def check_victory(self, last_agent=None):
         # basic victory check of if the agent owns half or more of the tiles
