@@ -14,7 +14,8 @@ Kiara:
 Usman:
 - Finished Implementation for Player Class, anyone can take control of the game (be it player or agent) as long as they give the appropritate input
 Isen:
-- Created a plan for __
+- Created a plan for a MCTS w/ Neural Network reinforcement learning model (commit 36b8f4c)
+- Added a turn system, bug fixing, revamped basic play_game script (commit fa779b0)
 
 Plan for the next two weeks:
 - Complete RL model plans
