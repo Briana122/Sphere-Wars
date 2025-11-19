@@ -1,59 +1,50 @@
+import argparse
 import random
 import time
+import os
 from gymnasium_env.envs.game_env import GameEnv
+from gymnasium_env.agents import make_agent
+from gymnasium_env.utils.action_utils import get_legal_actions
 
 def main():
-    env = GameEnv(players=2, pieces_per=1, render_mode="human")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--agent-type", default="random")
+    parser.add_argument("--model-path", default=None)
+    parser.add_argument("--sleep", type=float, default=0.02)
+    args = parser.parse_args()
+
+    env = GameEnv(render_mode="human")
     obs, _ = env.reset()
+
+    agent = make_agent(args.agent_type, env.action_space, env.observation_space)
+
+    if args.model_path and os.path.exists(args.model_path):
+        agent.load_model(args.model_path)
+        print("Loaded model:", args.model_path)
 
     done = False
 
     while not done:
-        game = env.game
-        current = game.current_player
+        legal = get_legal_actions(env)
 
-        piece_keys = [
-            key for key in game.pieces.keys()
-            if key[0] == current and not game.moved_flags[current].get(key[1], False)
-        ]
-
-        if len(piece_keys) == 0:
-            game.end_turn()
+        if not legal:
+            env.game.end_turn()
             continue
 
-        agent, pid = random.choice(piece_keys)
-        piece = game.pieces[(agent, pid)]
-
-        legal_moves = game.legal_moves(piece)
-
-        if not legal_moves:
-            game.moved_flags[agent][pid] = True
-            continue
-
-        cost = 10
-        can_spawn = (game.resources[current] >= cost)
-
-        if can_spawn:
-            action_type = 1
-            dest = 0  
-        else:
-            action_type = 0
-            dest = random.choice(legal_moves)
-
-
-        all_piece_keys = list(game.pieces.keys())
-        piece_index = all_piece_keys.index((agent, pid))
-
-        action = (piece_index, dest, action_type)
+        action = agent.select_action(obs, legal)
+        if action is None:
+            action = random.choice(legal)
 
         obs, reward, terminated, truncated, info = env.step(action)
         env.render()
-        time.sleep(0.02)
+        time.sleep(args.sleep)
 
         if terminated or truncated:
-            print("Game Over! Winner:", game.winner)
+            print("Winner:", env.game.winner)
             done = True
-            break
+
+        if not get_legal_actions(env):
+            env.game.end_turn()
 
     env.close()
 

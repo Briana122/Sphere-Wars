@@ -3,7 +3,7 @@ import math
 from .Game import Game
 from .Piece import Piece
 from .Tile import Tile
-from ..utils.training_game import Hexasphere
+from ..utils.game_board import Hexasphere
 
 def render(screen, game, width, height, rx=0, ry=0, zoom=1.0):
     screen.fill((10, 10, 20))

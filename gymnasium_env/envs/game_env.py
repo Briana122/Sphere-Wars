@@ -4,9 +4,11 @@ import numpy as np
 import pygame
 import math
 
+from gymnasium_env.utils.constants import SPAWN_COST
+
 from ..game.Game import Game
 from ..game.Piece import Piece
-from ..utils.training_game import Hexasphere
+from ..utils.game_board import Hexasphere
 
 # UI Import
 from ..game.PlayerUI import PlayerUI
@@ -94,10 +96,9 @@ class GameEnv(gym.Env):
         spawned = True
         if action_type == 1:
             # SPAWN action (only if enough resources)
-            cost = 10
-            if self.game.resources[piece.agent] >= cost:
+            if self.game.resources[piece.agent] >= SPAWN_COST:
                 print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} ")
-                spawned = self.game.spawn_piece(piece.agent, cost=cost)
+                spawned = self.game.spawn_piece(piece.agent, cost=SPAWN_COST)
 
         if action_type == 0 or not spawned:
             # MOVE action

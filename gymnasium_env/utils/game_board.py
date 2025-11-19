@@ -99,21 +99,3 @@ class Hexasphere:
         return np.array([x,y,z])
 
 # core game logic
-
-
-def train(env, agent, episodes=2000):
-    # training loop to use for each agent
-    
-    for episode in range(episodes):
-        state, _ = env.reset()
-        done = False
-
-        while not done:
-            legal_actions = env.get_legal_actions()
-            action = agent.select_action(state, legal_actions)
-            next_state, reward, done, truncated, info = env.step(action)
-
-            agent.train((state, action, reward, next_state, done))
-            state = next_state
-
-        print(f"Episode {episode+1}/{episodes} completed.")
