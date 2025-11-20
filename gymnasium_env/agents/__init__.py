@@ -1,6 +1,6 @@
 from .base_agent import BaseAgent
 from .random_agent import RandomAgent
-from .q_learning_FA.q_learning_fa_agent import QLearningFAAgent
+# from .q_learning_FA.q_learning_fa_agent import QLearningFAAgent
 # from .dqn.dqn_agent import DQNAgent
 
 def make_agent(name, action_space, observation_space, **kwargs):
