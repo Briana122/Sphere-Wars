@@ -1,0 +1,80 @@
+import time
+import numpy as np
+import torch
+
+from gymnasium_env.agents.dqn.dqn_agent import DQNAgent
+from gymnasium_env.envs.game_env import GameEnv
+from gymnasium_env.agents.dqn.dqn_model import encode_observation
+from gymnasium_env.agents.dqn.utils import make_legal_mask
+
+## SETUP ##
+device = "cuda" if torch.cuda.is_available() else "cpu"
+num_episodes = 5
+max_steps = 50
+render_every = 50 # don't render every episode for visibility purposes
+render_delay = 0.3
+
+# Initialize weights and empty buffer
+env = GameEnv(players=2, pieces_per=1, render_mode="human")
+agent = DQNAgent(env, device=device)
+
+
+## LOOP FOR TRAINING ##
+for ep in range(num_episodes):
+    obs, _ = env.reset()
+    state = encode_observation(obs, env.players)
+    total_reward = 0
+
+    render = (ep % render_every == 0)
+
+    for step in range(max_steps):
+        env.game.selected = None  # reset selected piece on each step
+        legal_mask = make_legal_mask(env)
+
+        # Select action based on epsilon-greedy policy, and apply.
+        # Take action a_t, observe r_t and s_{t+1}, put in buffer
+        action_index, action_tuple = agent.select_action(obs, legal_mask)
+        next_obs, reward, done, truncated, info = env.step(action_tuple)
+        piece_id, dest, action_type = action_tuple
+
+        # Highlight selected piece in render
+        piece_key = info.get("piece_key", None)
+        if piece_key is not None and piece_key in env.game.pieces:
+            env.game.selected = piece_key # valid piece
+        else:
+            env.game.selected = None
+
+        before_owner = env.game.tiles[dest].owner
+        after_owner = env.game.tiles[dest].owner
+
+        # small negative reward for idle moves
+        if action_type == 0 and before_owner == after_owner:
+            reward -= 0.01
+        next_state = encode_observation(next_obs, env.players)
+
+        agent.add_transition(state, action_index, reward, next_state, done)
+
+        # Sample mini-batch and compute targets
+        loss = agent.train_step()
+
+        state = next_state
+        obs = next_obs
+        total_reward += reward
+
+        ## RENDER SELECT EPISODES ##
+        if render:
+            env.render()
+            time.sleep(render_delay)
+
+        if done:
+            break
+
+
+    ## LOGGING ##
+    if (ep + 1) % 10 == 0:
+        print(f"Episode {ep+1}, total_reward={total_reward:.2f}, "
+              f"buffer_size={len(agent.replay_buffer)}, epsilon={agent.epsilon():.3f}")
+
+    ## SAVE CHECKPOINT ##
+    if (ep + 1) % 500 == 0:
+        agent.save(f"dqn_checkpoint_ep{ep+1}.pt")

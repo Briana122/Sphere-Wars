@@ -94,6 +94,8 @@ class GameEnv(gym.Env):
 
         # if spawn fails, then choose move action
         spawned = True
+        self.game.selected = piece_key
+
         if action_type == 1:
             # SPAWN action (only if enough resources)
             if self.game.resources[piece.agent] >= SPAWN_COST:
@@ -102,7 +104,16 @@ class GameEnv(gym.Env):
 
         if action_type == 0 or not spawned:
             # MOVE action
-            print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} \t ", end="")
+            print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} ")
+
+            # VALIDITY CHECKS
+            if dest < 0 or dest >= len(self.game.tiles):
+                return self._get_obs(), reward, False, False, {"piece_key": None}
+
+            legal = self.game.legal_moves(piece)
+            if dest not in legal:
+                return self._get_obs(), reward, False, False, {"piece_key": None}
+    
             before_owner = self.game.tiles[dest].owner
             self.game.move(piece, dest)
             after_owner = self.game.tiles[dest].owner
@@ -118,10 +129,19 @@ class GameEnv(gym.Env):
 
         if terminated:
             print(f"Winner is agent {piece.agent}")
+        if not terminated:
+            next_player = 1 - self.game.current_player
+            self.game.reset_turn(next_player)
+
+            self.game.current_player = next_player
 
         # Return updated observation
+        piece_key = piece_key
         obs = self._get_obs()
-        return obs, reward, terminated, truncated, {}
+
+        # self.game.current_player = 1 - self.game.current_player # change players
+
+        return obs, reward, terminated, truncated, {"piece_key": piece_key}
 
 
     def render(self):
