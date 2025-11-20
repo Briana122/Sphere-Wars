@@ -97,12 +97,12 @@ class GameEnv(gym.Env):
         if action_type == 1:
             # SPAWN action (only if enough resources)
             if self.game.resources[piece.agent] >= SPAWN_COST:
-                print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} ")
+                print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} \t ", end="")
                 spawned = self.game.spawn_piece(piece.agent, cost=SPAWN_COST)
 
         if action_type == 0 or not spawned:
             # MOVE action
-            print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} ")
+            print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} \t ", end="")
             before_owner = self.game.tiles[dest].owner
             self.game.move(piece, dest)
             after_owner = self.game.tiles[dest].owner
@@ -110,6 +110,7 @@ class GameEnv(gym.Env):
             # Reward if new tile captured
             if before_owner != after_owner and after_owner == piece.agent:
                 reward += 1
+        print(f"Reward: {reward}")
 
         # Check for game termination
         terminated = self.game.winner is not None
