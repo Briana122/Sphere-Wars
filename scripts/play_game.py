@@ -7,44 +7,90 @@ from gymnasium_env.agents import make_agent
 from gymnasium_env.utils.action_utils import get_legal_actions
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--agent-type", default="random")
-    parser.add_argument("--model-path", default=None)
-    parser.add_argument("--sleep", type=float, default=0.02)
+    parser = argparse.ArgumentParser(description="Play a game in the Hexasphere environment.")
+    parser.add_argument("--agent0-type", default="random", help="Agent type for player 0.")
+    parser.add_argument("--agent1-type", default="random", help="Agent type for player 1.")
+    parser.add_argument("--agent0-model", default=None, help="Path to saved pre-trained model for player 0 (optional).")
+    parser.add_argument("--agent1-model", default=None, help="Path to saved pre-traained model for player 1 (optional).")
+    parser.add_argument("--players", type=int, default=2, help="Number of players (currently only support 2).")
+    parser.add_argument("--pieces-per", type=int, default=1)
+    parser.add_argument("--sleep", type=float, default=0.02, help="Seconds to sleep between frames for rendering.")
     args = parser.parse_args()
 
-    env = GameEnv(render_mode="human")
+    # Create environment with rendering enabled
+    env = GameEnv(players=args.players, pieces_per=args.pieces_per, render_mode="human")
     obs, _ = env.reset()
 
-    agent = make_agent(args.agent_type, env.action_space, env.observation_space)
+    # Create one agent per player
+    agent0 = make_agent(args.agent0_type, env.action_space, env.observation_space)
+    agent1 = make_agent(args.agent1_type, env.action_space, env.observation_space)
 
-    if args.model_path and os.path.exists(args.model_path):
-        agent.load_model(args.model_path)
-        print("Loaded model:", args.model_path)
+    # Load models if provided
+    if args.agent0_model and os.path.exists(args.agent0_model):
+        try:
+            agent0.load_model(args.agent0_model)
+            print("Player 0 loaded model:", args.agent0_model)
+        except Exception as e:
+            print("Failed to load model for player 0:", e)
+
+    if args.agent1_model and os.path.exists(args.agent1_model):
+        try:
+            agent1.load_model(args.agent1_model)
+            print("Player 1 loaded model:", args.agent1_model)
+        except Exception as e:
+            print("Failed to load model for player 1:", e)
+
+    # If agents have epsilon (like Q-learning FA), use greedy play:
+    if hasattr(agent0, "epsilon"):
+        agent0.epsilon = 0.0
+    if hasattr(agent1, "epsilon"):
+        agent1.epsilon = 0.0
 
     done = False
 
-    while not done:
-        legal = get_legal_actions(env)
+    print("Starting game. Close the window to exit.")
 
-        if not legal:
-            env.game.end_turn()
+    while not done:
+        game = env.game
+        current = game.current_player
+
+        legal_actions = get_legal_actions(env)
+
+        if not legal_actions:
+            # No legal moves for this player, end their turn
+            print(f"--- END TURN for player {game.current_player} ---")
+            game.end_turn()
             continue
 
-        action = agent.select_action(obs, legal)
-        if action is None:
-            action = random.choice(legal)
+        # Choose which agent acts based on current player
+        if current == 0:
+            acting_agent = agent0
+        elif current == 1:
+            acting_agent = agent1
+        # Fallback for now or if we ever go beyond 2 players (or raise an error)
+        else:
+            acting_agent = agent0 
 
+        # Let the agent pick an action from the legal set
+        action = acting_agent.select_action(obs, legal_actions)
+        if action is None:
+            action = random.choice(legal_actions)
+
+        # Step the environment
         obs, reward, terminated, truncated, info = env.step(action)
         env.render()
         time.sleep(args.sleep)
 
         if terminated or truncated:
-            print("Winner:", env.game.winner)
+            print("Game Over! Winner:", env.game.winner)
             done = True
+            break
 
-        if not get_legal_actions(env):
-            env.game.end_turn()
+        # After acting, if this player has no more moves, end their turn
+        remaining_actions = get_legal_actions(env)
+        if not remaining_actions:
+            print(f"--- END TURN for player {current} ---")
+            game.end_turn()
 
     env.close()
 
