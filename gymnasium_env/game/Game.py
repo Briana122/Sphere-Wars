@@ -19,16 +19,18 @@ class Game:
             for pid in range(pieces_per):
                 free = [t for t in self.tiles if self.tiles[t].piece is None]
                 start = random.choice(free)
+
                 piece = Piece(p,pid,start)
                 self.pieces[(p,pid)] = piece
                 self.tiles[start].piece = (p,pid)
                 self.tiles[start].owner = p
+
                 self.player_objs[p].add_piece(pid)
                 self.player_objs[p].add_tile(start)
                 self.resources[p]+=self.tiles[start].resources
                 self.player_objs[p].acqumilated_resources += self.tiles[start].resources
 
-        self.current_player = 0
+        self.current_player = 0 # will be randomized in reset() function
         self.moved_flags = {p: {} for p in range(players)}
         for (agent, pid), piece in self.pieces.items():
             self.moved_flags[agent][pid] = False

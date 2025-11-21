@@ -1,1 +1,13 @@
-SPAWN_COST = 10
+# Reward Structure
+SPAWN_COST = 10.0
+CAPTURE_REWARD = 1.0
+WIN_REWARD = 10.0
+
+# Tiles
+MAX_RESOURCES = 10000
+
+# Training
+MAX_STEPS = 10000
+
+# Board
+SUBDIV = 1

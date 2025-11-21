@@ -4,7 +4,7 @@ import numpy as np
 import pygame
 import math
 
-from gymnasium_env.utils.constants import SPAWN_COST
+from gymnasium_env.utils.constants import MAX_RESOURCES, MAX_STEPS, SPAWN_COST, CAPTURE_REWARD, SUBDIV, WIN_REWARD
 
 from ..game.Game import Game
 from ..game.Piece import Piece
@@ -22,7 +22,7 @@ class GameEnv(gym.Env):
 
     metadata = {"render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self, players=2, pieces_per=1, render_mode=None, subdiv=2):
+    def __init__(self, players=2, pieces_per=1, render_mode=None, subdiv=SUBDIV):
         super().__init__()
         self.game = None
         self.players = players
@@ -34,10 +34,9 @@ class GameEnv(gym.Env):
         temp_hex = Hexasphere(subdiv=self.subdiv)
         self.num_tiles = len(temp_hex.tiles)
 
-        # self.action_space = spaces.Discrete(self.num_tiles)
+        self.tiles_to_win = int(math.ceil(self.num_tiles / 2))
+        print(f"Goal is {self.tiles_to_win} tiles")
 
-        # Each action can be either a move (piece_id, dest_tile) or a spawn command
-        
         self.action_space = spaces.Tuple((
             spaces.Discrete(self.max_pieces),
             spaces.Discrete(self.num_tiles),
@@ -45,8 +44,33 @@ class GameEnv(gym.Env):
         ))
 
         self.observation_space = spaces.Dict({
-            "ownership": spaces.Box(low=-1, high=players, shape=(self.num_tiles,), dtype=np.int32),
-            "resources": spaces.Box(low=0, high=1000, shape=(self.players,), dtype=np.int32)
+            # which player owns which tile
+            "ownership": spaces.Box(
+                low=-1, high=self.players-1,
+                shape=(self.num_tiles,), dtype=np.int8
+            ),
+            # where each piece is located
+            "piece_owner": spaces.Box(
+                low=-1, high=self.players-1,
+                shape=(self.num_tiles,), dtype=np.int8
+            ),
+            # number of resources per player
+            "resources": spaces.Box(
+                low=0, high=MAX_RESOURCES,
+                shape=(self.players,), dtype=np.int32
+            ),
+            # current player
+            "current_player": spaces.Discrete(self.players),
+            # step number
+            "step_count": spaces.Box(
+                low=0, high=MAX_STEPS,  # arbitrary cap; you can adjust
+                shape=(), dtype=np.int32
+            ),
+            # number of tiles needed to win
+            "tiles_to_win": spaces.Box(
+                low=0, high=self.num_tiles,
+                shape=(), dtype=np.int32
+            ),
         })
 
         # rendering setup
@@ -72,78 +96,72 @@ class GameEnv(gym.Env):
         """Start a new game and return the initial observation."""
         hex_map = Hexasphere(subdiv=self.subdiv)
         self.game = Game(hex_map, players=self.players, pieces_per=self.pieces_per)
+        self.game.current_player = np.random.randint(self.players)
         self.game.current_player = 0
+        self.step_count = 0
         obs = self._get_obs()
         return obs, {}
 
     def step(self, action):
         """Take an action = (piece_id, dest_tile, action_type)."""
-        reward = 0
+        reward = 0.0
+        self.step_count += 1 
+        terminated = truncated = False
 
         # Unpack action
         piece_id, dest, action_type = action
 
         # Check valid piece index
         piece_keys = list(self.game.pieces.keys())
-        if piece_id < 0 or piece_id >= len(piece_keys):
-            return self._get_obs(), reward, False, False, {}
 
         # Get the piece object
         piece_key = piece_keys[piece_id]
         piece = self.game.pieces[piece_key]
 
-        # if spawn fails, then choose move action
-        spawned = True
+        # Illegal action: Reference to non-existing piece index
+        if piece_id < 0 or piece_id >= len(piece_keys):
+            return self._get_obs(), reward, terminated, truncated, {"illegal": True}
+
+        # Illegal action: Must act only with current_player's piece
+        if piece.agent != self.game.current_player:
+            return self._get_obs(), reward, terminated, truncated, {"illegal": True}
+
         self.game.selected = piece_key
 
+        captured_new_tile = False
+        spawned = False
+
         if action_type == 1:
-            # SPAWN action (only if enough resources)
+            # SPAWN
             if self.game.resources[piece.agent] >= SPAWN_COST:
-                print(f"Agent: {piece.agent} \t Action: Spawn \t Resources: {self.game.resources[piece.agent]} \t ", end="")
                 spawned = self.game.spawn_piece(piece.agent, cost=SPAWN_COST)
+            if not spawned:
+                # If spawn fails, fall back to MOVE as per your original logic
+                moved, captured_new_tile = self._apply_move(piece, dest)
+            else:
+                print(f"Agent: {piece.agent} \t Action: Spawn \t\t Resources: {self.game.resources[piece.agent]} ", end="")
+        else:
+            # MOVE
+            moved, captured_new_tile = self._apply_move(piece, dest)
 
-        if action_type == 0 or not spawned:
-            # MOVE action
-            print(f"Agent: {piece.agent} \t Action: Move \t Resources: {self.game.resources[piece.agent]} ")
+        if captured_new_tile:
+            reward += CAPTURE_REWARD
 
-            # VALIDITY CHECKS
-            if dest < 0 or dest >= len(self.game.tiles):
-                return self._get_obs(), reward, False, False, {"piece_key": None}
+        print(f"\t\tReward: {reward} \t ", end="")
+        if spawned or moved:
+            print(f"Successful Action")
 
-            legal = self.game.legal_moves(piece)
-            if dest not in legal:
-                return self._get_obs(), reward, False, False, {"piece_key": None}
-    
-            before_owner = self.game.tiles[dest].owner
-            self.game.move(piece, dest)
-            after_owner = self.game.tiles[dest].owner
+        # ---------------------- Check victory ----------------------
 
-            # Reward if new tile captured
-            if before_owner != after_owner and after_owner == piece.agent:
-                reward += 1
-        print(f"Reward: {reward}")
+        if self.game.check_victory(last_agent=piece.agent):
+            terminated = True
+            reward += WIN_REWARD
 
-        # Check for game termination
-        terminated = self.game.winner is not None
-        truncated = False
-
-        if terminated:
-            print(f"Winner is agent {piece.agent}")
-        if not terminated:
-            next_player = 1 - self.game.current_player
-            self.game.reset_turn(next_player)
-
-            self.game.current_player = next_player
-
-        # Return updated observation
-        piece_key = piece_key
         obs = self._get_obs()
+        info = {"piece_key": piece_key}
 
-        # self.game.current_player = 1 - self.game.current_player # change players
-
-        return obs, reward, terminated, truncated, {"piece_key": piece_key}
-
-
+        return obs, reward, terminated, truncated, info
+    
     def render(self):
         """Render the current game state."""
         if self.render_mode != "human":
@@ -185,25 +203,48 @@ class GameEnv(gym.Env):
         self.clock.tick(self.metadata["render_fps"])
 
         # Update the display
-        # Note: There was a pygame.display.flip() in visual_game.py's render function.
-        # However, I think it's best to call pygame.display.update() here after doing everything that needs to be done.
-        # Otherwise I'd have to add all the player UI drawing stuff in visual_game.py which i don't know if that's the best idea.
-        # But we can always change it later if needed.
         pygame.display.update()
         
 
+    def _apply_move(self, piece, dest):
+        """
+        Helper to apply a move and report whether we captured a new tile.
+        Returns (moved: bool, captured_new_tile: bool).
+        """
+        # Basic validity: dest must be inside board
+        if dest < 0 or dest >= len(self.game.tiles):
+            return False, False
+
+        legal = self.game.legal_moves(piece)
+        if dest not in legal:
+            return False, False
+
+        moved, captured_new_tile = self.game.move(piece, dest)
+
+        print(f"Agent: {piece.agent} \t Action: Move \t\t Resources: {self.game.resources[piece.agent]} ", end="")
+
+        return moved, captured_new_tile
+
     def _get_obs(self):
-        """Return current observation of game."""
-        ownership = np.array([
-            self.game.tiles[t].owner if self.game.tiles[t].owner is not None else -1
-            for t in self.game.tiles
-        ], dtype=np.int32)
+        ownership = np.full((self.num_tiles,), -1, dtype=np.int8)
+        piece_owner = np.full((self.num_tiles,), -1, dtype=np.int8)
 
-        resources = np.array([
-            self.game.resources[p] for p in range(self.players)
-        ], dtype=np.int32)
+        for tid, tile in self.game.tiles.items():
+            if tile.owner is not None:
+                ownership[tid] = tile.owner
+            if tile.piece is not None:
+                piece_owner[tid] = tile.piece[0]
 
-        return {"ownership": ownership, "resources": resources}
+        resources = np.array(
+            [self.game.resources[p] for p in range(self.players)],
+            dtype=np.int32
+        )
 
-    def _make_hex(self):
-        return Hexasphere(subdiv=3)
+        return {
+            "ownership": ownership,
+            "piece_owner": piece_owner,
+            "resources": resources,
+            "current_player": self.game.current_player,
+            "step_count": np.int32(self.step_count),
+            "tiles_to_win": np.int32(self.tiles_to_win),
+        }

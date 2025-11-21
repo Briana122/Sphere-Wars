@@ -54,43 +54,61 @@ class Player:
         old_tile = game.tiles[piece.tile_id]
         old_tile.piece = None
 
-        # If an enemy occupies the tile, we will take the steps to take over the tile
-        # Note: I have no idea if we'll even need this, 
-        # I kept it in here to be thorough since it's the game's job to check if it's a fair move
         target_tile = game.tiles[dest]
-        if target_tile.piece and target_tile.piece[0] != self.player_id:
-            enemy_agent, enemy_pid = target_tile.piece
-            if (enemy_agent, enemy_pid) in game.pieces:
-                del game.pieces[(enemy_agent, enemy_pid)]
-            game.player_objs[enemy_agent].remove_piece(enemy_pid)
+
+        # No attacking: we assume we never move onto enemy-owned tiles,
+        # so target_tile.piece should be None or friendly.
+        # If you ever see an enemy piece here, treat it as illegal move upstream.
+        if (target_tile.piece is not None and
+                target_tile.owner is not None and
+                target_tile.owner != self.player_id):
+            # Safety check; should not happen if legal_moves is correct
+            # Undo and fail.
+            old_tile.piece = (self.player_id, piece.pid)
+            return False, False
 
         # Move the piece and update the tile to show occupancy
         piece.tile_id = dest
         target_tile.piece = (self.player_id, piece.pid)
 
         # Ownership & capture rewards
+        captured_new_tile = False
         if target_tile.owner != self.player_id:
-            if target_tile.owner is not None:
-                game.player_objs[target_tile.owner].remove_tile(target_tile.id)
+            if target_tile.owner is not None and target_tile.owner != self.player_id:
+                prev_owner = target_tile.owner
+                game.player_objs[prev_owner].remove_tile(target_tile.id)
+                
             target_tile.owner = self.player_id
             self.add_tile(target_tile.id)
             self.gain_resources(target_tile.resources, game)
-            game.check_victory(self.player_id)
+            # game.check_victory(self.player_id)
+            captured_new_tile = True
 
         # Update total moves & game episode log
         self.total_moves += 1
+
         game.episode_log.append({
             "agent": self.player_id,
-            "action": dest,
+            "action": ("move", dest),
             "resources": dict(game.resources),
             "winner": getattr(game, "winner", None),
         })
 
-    # Spawns a new piece on a random owned and unoccupied title
+        return True, captured_new_tile
+
+    # Spawns a new piece on a random owned and unoccupied tile
     def spawn_piece(self, cost, game):
-        owned_free = [t for t in game.tiles.values() if t.owner == self.player_id and t.piece is None]
-        if not owned_free:
+        if game.resources[self.player_id] < cost:
             return False
+        
+        # Get list of owned tiles with no piece on it 
+        owned_free_tiles = [t for t in game.tiles.values() if t.owner == self.player_id and t.piece is None]
+        # If no tiles are unoccupied, cannot spawn
+        if not owned_free_tiles:
+            return False
+
+        # Choose random tile to spawn new piece
+        tile = random.choice(owned_free_tiles)
 
         # Give this piece the next pid
         existing = [pid for (a, pid) in game.pieces.keys() if a == self.player_id]
@@ -98,9 +116,6 @@ class Player:
             pid = 0
         else:
             pid = max(existing) + 1
-
-        # Choose random tile
-        tile = random.choice(owned_free)
 
         # Create and register piece
         new_piece = Piece(self.player_id, pid, tile.id)
@@ -120,7 +135,7 @@ class Player:
         })
 
         # Check for victory
-        game.check_victory(self.player_id)
+        # game.check_victory(self.player_id)
         return True
 
     # ---------------------------------------------------------------------
