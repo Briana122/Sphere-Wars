@@ -227,9 +227,6 @@ class ActorCriticAgent(BaseAgent):
             not_done = 1.0 - dones_t[t]
             next_return = rewards_t[t] + self.gamma * next_return * not_done
             returns[t] = next_return
-
-        print("update: states_t.shape:", states_t.shape)
-        print("update: masks_t.shape:", masks_t.shape)
         
         logits, values = self.model(states_t)
 
