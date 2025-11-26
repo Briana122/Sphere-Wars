@@ -120,8 +120,6 @@ class GameEnv(gym.Env):
         # Get selected piece
         piece = self.game.pieces[(self.game.current_player, pid)]
 
-        # Illegal action: selected piece != player's piece
-
         # Illegal action: Must act only with current_player's piece
         if piece.agent != self.game.current_player:
             truncated = True

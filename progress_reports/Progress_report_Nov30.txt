@@ -7,7 +7,12 @@ Each group member has implemented and trained their own RL model.
 We plan to have the demo ready Nov 28th.
 
 Briana:
-- 
+- Switched from Q-learning with FA to Actor-Critic with FA model 
+- Updated the RL plan for Actor-Critic
+- Implemented an Actor-Critic model and the training script
+- Trained and evaluated the Actor-Critic model against a random agent
+- Cleaned up environment code, and abstracted constants/hardcoded values for better readability and consistency
+- Enhanced environment observations so that agent can perceive more of the environment
 Kiara:
 - Implemented a Deep Q-Network (commit 103a5a2).
 - Trained the DQN (commit __).
