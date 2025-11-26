@@ -1,0 +1,21 @@
+4010 Group Project Progress Report (Nov 30)
+
+Group 11: Sphere Wars
+
+Progress of group members in past two weeks:
+Each group member has implemented and trained their own RL model.
+We plan to have the demo ready Nov 28th.
+
+Briana:
+- 
+Kiara:
+- Implemented a Deep Q-Network (commit 103a5a2).
+- Trained the DQN (commit __).
+Usman:
+- 
+Isen:
+- 
+
+Plan for the next two weeks:
+- Finish comparing the RL models.
+- Write the final report.
