@@ -6,8 +6,10 @@ WIN_REWARD = 10.0
 # Tiles
 MAX_RESOURCES = 10000
 
-# Training
-MAX_STEPS = 10000
-
+# Environment
+MAX_STEPS = 2000
 # Board
-SUBDIV = 1
+SUBDIV = 2
+
+# Training
+NUM_EPISODES = 20000

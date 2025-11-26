@@ -3,6 +3,7 @@ import random
 import time
 import os
 from gymnasium_env.envs.game_env import GameEnv
+from gymnasium_env.agents.actor_critic.ac_agent import ActorCriticAgent
 from gymnasium_env.agents import make_agent
 from gymnasium_env.utils.action_utils import get_legal_actions
 
@@ -72,7 +73,19 @@ def main():
             acting_agent = agent0 
 
         # Let the agent pick an action from the legal set
-        action = acting_agent.select_action(obs, legal_actions)
+        if isinstance(acting_agent, ActorCriticAgent):
+            # ActorCriticAgent expects (obs, legal_actions, current_player, greedy)
+            # and returns (action, info)
+            action, _info = acting_agent.select_action(
+                obs=obs,
+                legal_actions=legal_actions,
+                current_player=current,
+                greedy=True,  # use greedy policy for evaluation
+            )
+        else:
+            # Other agents use the simpler interface and return just the action
+            action = acting_agent.select_action(obs, legal_actions)
+            
         if action is None:
             action = random.choice(legal_actions)
 

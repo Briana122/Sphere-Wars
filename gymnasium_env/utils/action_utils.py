@@ -20,9 +20,9 @@ def get_legal_actions(env):
         moves = game.legal_moves(piece)
 
         for dest in moves:
-            legal.append((idx, dest, 0))
+            legal.append((pid, dest, 0))
 
         if can_spawn:
-            legal.append((idx, 0, 1))
+            legal.append((pid, piece.tile_id, 1))
 
     return legal
