@@ -22,23 +22,24 @@ class GameEnv(gym.Env):
 
     metadata = {"render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self, players=2, pieces_per=1, render_mode=None, subdiv=SUBDIV):
+    def __init__(self, players=2, pieces_per=1, render_mode=None, subdiv=SUBDIV, max_steps=MAX_STEPS):
         super().__init__()
         self.game = None
         self.players = players
         self.pieces_per = pieces_per
-        self.max_pieces = self.pieces_per * self.players * 5
         self.render_mode = render_mode
         self.subdiv = subdiv
+        self.max_steps = max_steps
 
         temp_hex = Hexasphere(subdiv=self.subdiv)
         self.num_tiles = len(temp_hex.tiles)
+        self.max_pieces_per_player = math.floor(self.num_tiles / 4)
 
         self.tiles_to_win = int(math.ceil(self.num_tiles / 2))
-        print(f"Goal is {self.tiles_to_win} tiles")
+        # print(f"Goal is {self.tiles_to_win} tiles, max pieces is {self.max_pieces_per_player}")
 
         self.action_space = spaces.Tuple((
-            spaces.Discrete(self.max_pieces),
+            spaces.Discrete(self.max_pieces_per_player),
             spaces.Discrete(self.num_tiles),
             spaces.Discrete(2)
         ))
@@ -97,36 +98,85 @@ class GameEnv(gym.Env):
         hex_map = Hexasphere(subdiv=self.subdiv)
         self.game = Game(hex_map, players=self.players, pieces_per=self.pieces_per)
         self.game.current_player = np.random.randint(self.players)
-        self.game.current_player = 0
         self.step_count = 0
         obs = self._get_obs()
         return obs, {}
 
     def step(self, action):
         """Take an action = (piece_id, dest_tile, action_type)."""
-        reward = 0.0
+        reward = -0.1
         self.step_count += 1 
         terminated = truncated = False
 
+        if self.step_count >= (self.max_steps - 1) and not terminated and not truncated:
+            truncated = True
+
         # Unpack action
-        piece_id, dest, action_type = action
+        pid, dest, action_type = action
 
+        piece = self.game.pieces[(self.game.current_player, pid)]
+        
         # Check valid piece index
-        piece_keys = list(self.game.pieces.keys())
+        # piece_keys = list(self.game.pieces.keys())
+        # print(self.game.current_player, piece_id)
+        # print(piece_keys)
 
-        # Get the piece object
-        piece_key = piece_keys[piece_id]
-        piece = self.game.pieces[piece_key]
+        # piece_keys = sorted(self.game.pieces.keys())
 
-        # Illegal action: Reference to non-existing piece index
-        if piece_id < 0 or piece_id >= len(piece_keys):
-            return self._get_obs(), reward, terminated, truncated, {"illegal": True}
+        # # Illegal action: Reference to non-existing piece index
+        # if piece_id < 0 or piece_id >= len(piece_keys):
+        #     truncated = True
+        #     print("here1")
+        #     return self._get_obs(), reward, terminated, truncated, {"illegal": True}
 
+        # # Get the piece object
+        # piece_key = piece_keys[piece_id]
+        # piece = self.game.pieces[piece_key]
+        
         # Illegal action: Must act only with current_player's piece
         if piece.agent != self.game.current_player:
-            return self._get_obs(), reward, terminated, truncated, {"illegal": True}
+            truncated = True
+            info = truncated, {"illegal": True}
+            print("here2")
+            print("piece agent:", piece.agent)
+            print("pid", piece.pid)
+            print(self.game.current_player)
+            return self._get_obs(), reward, terminated, info
 
-        self.game.selected = piece_key
+        self.game.selected = (piece.agent, pid)
+
+        # # Unpack action
+        # piece_id, dest, action_type = action
+
+        # # piece = self.game.pieces[(self.game.current_player, piece_id)]
+
+        # # Check valid piece index
+        # # piece_keys = list(self.game.pieces.keys())
+        # # print(self.game.current_player, piece_id)
+        # # print(piece_keys)
+
+        # piece_keys = sorted(self.game.pieces.keys())
+
+        # # Illegal action: Reference to non-existing piece index
+        # if piece_id < 0 or piece_id >= len(piece_keys):
+        #     truncated = True
+        #     print("here1")
+        #     return self._get_obs(), reward, terminated, truncated, {"illegal": True}
+
+        # # Get the piece object
+        # piece_key = piece_keys[piece_id]
+        # piece = self.game.pieces[piece_key]
+        
+        # # Illegal action: Must act only with current_player's piece
+        # if piece.agent != self.game.current_player:
+        #     truncated = True
+        #     print("here2")
+        #     print("piece agent:", piece.agent)
+        #     print("pid", piece.pid, piece_id)
+        #     print(self.game.current_player)
+        #     return self._get_obs(), reward, terminated, truncated, {"illegal": True}
+
+        # self.game.selected = piece_key
 
         captured_new_tile = False
         spawned = False
@@ -138,8 +188,8 @@ class GameEnv(gym.Env):
             if not spawned:
                 # If spawn fails, fall back to MOVE as per your original logic
                 moved, captured_new_tile = self._apply_move(piece, dest)
-            else:
-                print(f"Agent: {piece.agent} \t Action: Spawn \t\t Resources: {self.game.resources[piece.agent]} ", end="")
+            # else:
+                # print(f"Agent: {piece.agent} \t Action: Spawn \t\t Resources: {self.game.resources[piece.agent]} ", end="")
         else:
             # MOVE
             moved, captured_new_tile = self._apply_move(piece, dest)
@@ -147,9 +197,9 @@ class GameEnv(gym.Env):
         if captured_new_tile:
             reward += CAPTURE_REWARD
 
-        print(f"\t\tReward: {reward} \t ", end="")
-        if spawned or moved:
-            print(f"Successful Action")
+        # print(f"\t\tReward: {reward} \t ", end="")
+        # if spawned or moved:
+        #     print(f"Successful Action")
 
         # ---------------------- Check victory ----------------------
 
@@ -158,7 +208,8 @@ class GameEnv(gym.Env):
             reward += WIN_REWARD
 
         obs = self._get_obs()
-        info = {"piece_key": piece_key}
+        # info = {"piece_key": piece_key}
+        info = {"piece_key": (piece.agent, pid)}
 
         return obs, reward, terminated, truncated, info
     
@@ -221,7 +272,7 @@ class GameEnv(gym.Env):
 
         moved, captured_new_tile = self.game.move(piece, dest)
 
-        print(f"Agent: {piece.agent} \t Action: Move \t\t Resources: {self.game.resources[piece.agent]} ", end="")
+        # print(f"Agent: {piece.agent} \t Action: Move \t\t Resources: {self.game.resources[piece.agent]} ", end="")
 
         return moved, captured_new_tile
 
