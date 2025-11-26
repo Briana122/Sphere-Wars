@@ -1,5 +1,3 @@
-# train_actor_critic.py
-
 import os
 import random
 from collections import deque

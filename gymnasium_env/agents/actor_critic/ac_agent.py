@@ -1,5 +1,3 @@
-# gymnasium_env/agents/actor_critic/ac_agent.py
-
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -91,7 +89,7 @@ class ActorCriticAgent(BaseAgent):
         tiles_to_win = float(obs["tiles_to_win"])
 
         # Normalize ownership & piece_owner to roughly [-1, 1]
-        # ownership, piece_owner ∈ [-1, num_players-1]
+        # ownership, piece_owner is in [-1, num_players-1]
         denom = max(self.num_players - 1, 1)
         ownership = ownership / float(denom)
         piece_owner = piece_owner / float(denom)

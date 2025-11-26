@@ -113,27 +113,10 @@ class GameEnv(gym.Env):
 
         # Unpack action
         pid, dest, action_type = action
-
+        # Get selected piece
         piece = self.game.pieces[(self.game.current_player, pid)]
         
-        # Check valid piece index
-        # piece_keys = list(self.game.pieces.keys())
-        # print(self.game.current_player, piece_id)
-        # print(piece_keys)
-
-        # piece_keys = sorted(self.game.pieces.keys())
-
-        # # Illegal action: Reference to non-existing piece index
-        # if piece_id < 0 or piece_id >= len(piece_keys):
-        #     truncated = True
-        #     print("here1")
-        #     return self._get_obs(), reward, terminated, truncated, {"illegal": True}
-
-        # # Get the piece object
-        # piece_key = piece_keys[piece_id]
-        # piece = self.game.pieces[piece_key]
-        
-        # Illegal action: Must act only with current_player's piece
+        # Illegal action: selected piece != player's piece
         if piece.agent != self.game.current_player:
             truncated = True
             info = truncated, {"illegal": True}
@@ -143,41 +126,8 @@ class GameEnv(gym.Env):
             print(self.game.current_player)
             return self._get_obs(), reward, terminated, info
 
+        # Identify piece selected by agent that owns the piece and the piece id
         self.game.selected = (piece.agent, pid)
-
-        # # Unpack action
-        # piece_id, dest, action_type = action
-
-        # # piece = self.game.pieces[(self.game.current_player, piece_id)]
-
-        # # Check valid piece index
-        # # piece_keys = list(self.game.pieces.keys())
-        # # print(self.game.current_player, piece_id)
-        # # print(piece_keys)
-
-        # piece_keys = sorted(self.game.pieces.keys())
-
-        # # Illegal action: Reference to non-existing piece index
-        # if piece_id < 0 or piece_id >= len(piece_keys):
-        #     truncated = True
-        #     print("here1")
-        #     return self._get_obs(), reward, terminated, truncated, {"illegal": True}
-
-        # # Get the piece object
-        # piece_key = piece_keys[piece_id]
-        # piece = self.game.pieces[piece_key]
-        
-        # # Illegal action: Must act only with current_player's piece
-        # if piece.agent != self.game.current_player:
-        #     truncated = True
-        #     print("here2")
-        #     print("piece agent:", piece.agent)
-        #     print("pid", piece.pid, piece_id)
-        #     print(self.game.current_player)
-        #     return self._get_obs(), reward, terminated, truncated, {"illegal": True}
-
-        # self.game.selected = piece_key
-
         captured_new_tile = False
         spawned = False
 
