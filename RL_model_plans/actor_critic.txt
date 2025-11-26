@@ -1,0 +1,36 @@
+Actor–Critic with Function Approximation
+
+Reasoning:
+Actor–critic with function approximation is a natural fit for Sphere Wars because the state and action spaces are both large and structured. 
+Instead of learning a separate Q-value for every (state, action) pair, the actor–critic architecture uses a neural network to learn two things 
+jointly: a policy (the “actor”) that outputs a probability distribution over actions, and a value function (the “critic”) that estimates how good 
+the current state is under the current policy. In our implementation, a shared multilayer perceptron takes a compact, numeric encoding of the game 
+state (tile ownership, piece positions, per-player resources, current player as a one-hot vector, normalized step count, and tiles-to-win) and produces 
+both policy logits over the entire flattened action space and a single scalar value estimate. The actor is then trained to pick actions that lead to 
+higher advantage (return minus the critic’s baseline), while the critic is trained to predict returns via temporal-difference learning. This setup 
+works well in Sphere Wars because we can enforce legality by masking out invalid actions in the policy logits, and the critic helps stabilize learning 
+in a long-term, turn-based setting with stochastic opponents and self-play.
+
+Reward System:
+The reward design for the actor–critic agent closely mirrors the game’s strategic objectives while remaining simple enough to stabilize learning. At each 
+step, the agent receives a small negative reward of -0.1 to discourage aimless movement and overly long games. When a move results in capturing a new 
+tile, the agent receives a positive reward bonus of +1, directly reinforcing territorial expansion as the key intermediate goal. When a player wins by 
+owning at least half of the tiles on the board, they receive a large positive terminal reward of +10, which helps the network credit long sequences of good decisions 
+that lead to victory. There is no extra reward for spawning or moving on its own. Those actions only become beneficial if they eventually enable captures or a 
+win. The aim is that the combination of a small step penalty, capture reward, and win reward provides a clear learning signal that encourages efficient expansion and 
+winning play without overcomplicating the reward structure.
+
+Simple Pseudocode of Training Loop:
+We first initialize the actor–critic network, which takes the encoded game state as input and outputs policy logits over all actions and a scalar value estimate. 
+At the start of each episode, we reset the environment (Sphere Wars game board) and choose an opponent type (self-play, random, or frozen snapshot) according to 
+a curriculum. For each time step in the episode, we get the current game state and use a helper function to compute the set of legal actions for the current player. 
+If it is the learning agent’s turn, we encode the state into a flat vector, pass it through the network, mask out illegal actions in the logits, and either sample 
+an action (during training) or take the argmax (for greedy play). We then apply this action in the environment, observe the next state, the scalar reward, and 
+whether the episode has ended, and store the state vector, chosen action index, legal-action mask, reward, and done flag in episode buffers. If it is the opponent’s 
+turn, we let the opponent (random or frozen agent) pick an action from the same legal set and step the environment without recording that transition for learning. 
+
+Once the episode finishes, we compute discounted returns from the collected rewards, run all stored states through the network again to get values and masked policy 
+logits, and calculate advantages as (returns - values). Finally, we compute a combined loss consisting of a policy loss (negative log probability of taken actions 
+weighted by advantages), a value loss (mean-squared error between returns and values), and an entropy bonus to keep the policy sufficiently exploratory. We 
+backpropagate this loss through the network and update the parameters with Adam. This process is repeated across many episodes and hyperparameter configurations, 
+while tracking metrics like average return and win rate to monitor how well the policy is improving over time.
