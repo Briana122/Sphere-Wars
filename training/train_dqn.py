@@ -87,7 +87,7 @@ for ep in range(num_episodes):
 
     ## SAVE CHECKPOINT ##
     if (ep + 1) % 500 == 0:
-        agent.save(f"gymnasium_env/agent/dqn/checkpoints/dqn_checkpoint_ep{ep+1}.pt")
+        agent.save(f"gymnasium_env/agents/dqn/checkpoints/dqn_checkpoint_ep{ep+1}.pt")
 
 agent.save("gymnasium_env/agents/dqn/dqn_final_model.pt")
 
