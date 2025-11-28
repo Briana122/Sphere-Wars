@@ -1,6 +1,7 @@
 from gymnasium_env.agents.actor_critic.ac_agent import ActorCriticAgent
 from .base_agent import BaseAgent
 from .random_agent import RandomAgent
+from gymnasium_env.agents.dyna_q_plus import DynaQPlusGymAgent
 # from .dqn.dqn_agent import DQNAgent
 
 def make_agent(name, action_space, observation_space, **kwargs):
@@ -15,6 +16,13 @@ def make_agent(name, action_space, observation_space, **kwargs):
 
     if name in ("ac"):
         return ActorCriticAgent(
+            action_space=action_space,
+            observation_space=observation_space,
+            **kwargs
+        )
+    
+    if name in ("dyna", "dyna_q", "dyna_q_plus"):
+        return DynaQPlusGymAgent(
             action_space=action_space,
             observation_space=observation_space,
             **kwargs
