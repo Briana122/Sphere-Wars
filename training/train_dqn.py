@@ -9,7 +9,7 @@ from gymnasium_env.agents.dqn.utils import make_legal_mask
 
 ## SETUP ##
 device = "cuda" if torch.cuda.is_available() else "cpu"
-num_episodes = 5000
+num_episodes = 40000
 max_steps = 50
 render = False      # can toggle
 # render_every = 50   # don't render every episode for visibility purposes
@@ -87,7 +87,7 @@ for ep in range(num_episodes):
 
     ## SAVE CHECKPOINT ##
     if (ep + 1) % 500 == 0:
-        agent.save(f"dqn_checkpoint_ep{ep+1}.pt")
+        agent.save(f"gymnasium_env/agent/dqn/checkpoints/dqn_checkpoint_ep{ep+1}.pt")
 
 agent.save("gymnasium_env/agents/dqn/dqn_final_model.pt")
 

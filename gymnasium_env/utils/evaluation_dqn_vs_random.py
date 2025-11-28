@@ -4,7 +4,7 @@ import torch
 
 from gymnasium_env.envs.game_env import GameEnv
 from gymnasium_env.agents.dqn.dqn_agent import DQNAgent
-from gymnasium_env.agents.dqn.dqn_model import encode_observation
+from gymnasium_env.agents.dqn.dqn_model import encode_observation, index_to_tuple
 from gymnasium_env.agents.dqn.utils import make_legal_mask
 
 MODEL_PATH = "gymnasium_env/agents/dqn/dqn_final_model.pt"
@@ -55,10 +55,11 @@ def evaluate_dqn_vs_random(model_path: str, num_games: int = NUM_GAMES):
             if current_player == 0:
                 # DQN plays as Player 0
                 with torch.no_grad():
-                    action_index, action_tuple = agent.select_action(obs, legal_mask, greedy=True)
+                    action_index, action_tuple = agent.select_action(obs, legal_mask)
             else:
                 # Random plays as Player 1
                 action_tuple = random.choice(legal_actions)
+                action_tuple = index_to_tuple(action_tuple, env.max_pieces_per_player, env.num_tiles)
 
             obs, reward, terminated, truncated, info = env.step(action_tuple)
             env.game.end_turn()
