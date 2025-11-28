@@ -5,12 +5,13 @@
 # - training step
 # - soft update of target network
 
+import random
 import torch.nn as nn
 import numpy as np
 import torch.optim as optim
 import torch
 
-from .dqn_model import DQNModel, encode_observation, get_state_action_size
+from .dqn_model import DQNModel, encode_observation, get_state_action_size, tuple_to_index, index_to_tuple
 from .replay_buffer import ReplayBuffer
 
 class DQNAgent:
@@ -60,9 +61,28 @@ class DQNAgent:
                np.exp(-1.0 * self.steps_done / self.epsilon_decay)
 
     def select_action(self, obs, legal_mask=None):
-        epsilon = self.epsilon()
+        eps_threshold = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
+                    np.exp(-1.0 * self.steps_done / self.epsilon_decay)
         self.steps_done += 1
-        return self.policy_net.act(obs, self.env, epsilon=epsilon, legal_mask=legal_mask, device=self.device)
+
+        if random.random() < eps_threshold:
+            # random legal action
+            legal_indices = np.where(legal_mask)[0]
+            action_index = int(np.random.choice(legal_indices))
+            return action_index, index_to_tuple(action_index, self.env.max_pieces, self.env.num_tiles)
+        
+        # greedy action
+        state = encode_observation(obs, self.env.players)
+        state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            q_values = self.policy_net(state)   # <-- FIXED LINE
+            q_values = q_values.squeeze(0).cpu().numpy()
+
+        # Mask illegal moves
+        masked_q = np.where(legal_mask, q_values, -1e9)
+
+        action_index = int(np.argmax(masked_q))
+        return action_index, index_to_tuple(action_index, self.env.max_pieces, self.env.num_tiles)
 
     def add_transition(self, state, action, reward, next_state, done):
         ''' To store the transition in replay buffer '''
@@ -88,6 +108,7 @@ class DQNAgent:
 
         # Q(s,a) from policy network
         q_values = self.policy_net(state).gather(1, action.unsqueeze(1)).squeeze(1)
+        print(q_values.shape)
 
         # max_a' Q_target(s',a')
         with torch.no_grad():

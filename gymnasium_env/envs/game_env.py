@@ -116,10 +116,18 @@ class GameEnv(gym.Env):
         terminated = truncated = False
 
         # Unpack action
-        pid, dest, action_type = action
-        # Get selected piece
-        piece = self.game.pieces[(self.game.current_player, pid)]
+        piece_id, dest, action_type = action
 
+        current_agent = self.game.current_player
+        piece_keys = list(self.game.pieces.keys())
+        piece_key = (current_agent, piece_id)
+
+        # Illegal action: Reference to non-existing piece index
+        if piece_id < 0 or piece_id >= len(piece_keys):
+            return self._get_obs(), reward, terminated, truncated, {"illegal": True}        
+
+        piece = self.game.pieces[piece_key]
+        
         # Illegal action: Must act only with current_player's piece
         if piece.agent != self.game.current_player:
             truncated = True
@@ -141,7 +149,7 @@ class GameEnv(gym.Env):
             if self.game.resources[piece.agent] >= SPAWN_COST:
                 spawned = self.game.spawn_piece(piece.agent, cost=SPAWN_COST)
             if not spawned:
-                # If spawn fails, fall back to MOVE as per your original logic
+                # If spawn fails, fall back to MOVE
                 moved, captured_new_tile = self._apply_move(piece, dest)
             else:
                 print(f"Agent: {piece.agent} \t Action: Spawn \t\t Resources: {self.game.resources[piece.agent]} ", end="")

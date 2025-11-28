@@ -31,10 +31,22 @@ for ep in range(num_episodes):
         env.game.selected = None  # reset selected piece on each step
         legal_mask = make_legal_mask(env)
 
-        # Select action based on epsilon-greedy policy, and apply.
-        # Take action a_t, observe r_t and s_{t+1}, put in buffer
+        # # Debug info
+        # print("legal_mask length:", len(legal_mask))
+        # print("Legal true count:", legal_mask.sum())
+        # if legal_mask.sum() == 0:
+        #     print("ERROR: No legal actions. Current obs:", obs)
+        #     print("Current player:", env.game.current_player)
+        #     print("Pieces:", env.game.pieces)
+        #     raise RuntimeError("No legal actions for this state")
+
+        # Epsilon-greedy action selection and application
         action_index, action_tuple = agent.select_action(obs, legal_mask)
+        # print(f"Chosen action index: {action_index}, legal: {legal_mask[action_index]}")
         next_obs, reward, done, truncated, info = env.step(action_tuple)
+        env.game.end_turn()
+
+        # print(f"Reward from environment: {reward}")
         piece_id, dest, action_type = action_tuple
 
         # Highlight selected piece in render
@@ -43,6 +55,10 @@ for ep in range(num_episodes):
             env.game.selected = piece_key # valid piece
         else:
             env.game.selected = None
+
+        # # Debug info
+        # print("piece_id:", piece_id)
+        # print("piece_keys:", list(env.game.pieces.keys()))
 
         before_owner = env.game.tiles[dest].owner
         after_owner = env.game.tiles[dest].owner
@@ -60,6 +76,8 @@ for ep in range(num_episodes):
         state = next_state
         obs = next_obs
         total_reward += reward
+
+        print(f"state: {state}, action: {action_index}, reward: {reward}, next_state: {next_state}")
 
         ## RENDER SELECT EPISODES ##
         if render:
