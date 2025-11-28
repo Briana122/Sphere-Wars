@@ -69,20 +69,22 @@ class DQNAgent:
             # random legal action
             legal_indices = np.where(legal_mask)[0]
             action_index = int(np.random.choice(legal_indices))
-            return action_index, index_to_tuple(action_index, self.env.max_pieces, self.env.num_tiles)
+            action_tuple = index_to_tuple(action_index, self.env.max_pieces_per_player, self.env.num_tiles)
+            return action_index, action_tuple
         
         # greedy action
         state = encode_observation(obs, self.env.players)
         state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            q_values = self.policy_net(state)   # <-- FIXED LINE
+            q_values = self.policy_net(state)
             q_values = q_values.squeeze(0).cpu().numpy()
 
         # Mask illegal moves
         masked_q = np.where(legal_mask, q_values, -1e9)
 
         action_index = int(np.argmax(masked_q))
-        return action_index, index_to_tuple(action_index, self.env.max_pieces, self.env.num_tiles)
+        action_tuple = index_to_tuple(action_index, self.env.max_pieces_per_player, self.env.num_tiles)
+        return action_index, action_tuple
 
     def add_transition(self, state, action, reward, next_state, done):
         ''' To store the transition in replay buffer '''

@@ -139,7 +139,7 @@ class GameEnv(gym.Env):
             return self._get_obs(), reward, terminated, info
 
         # Identify piece selected by agent that owns the piece and the piece id
-        self.game.selected = (piece.agent, pid)
+        self.game.selected = (piece.agent, piece.pid)
 
         captured_new_tile = False
         spawned = False
@@ -171,7 +171,7 @@ class GameEnv(gym.Env):
             reward += WIN_REWARD
 
         obs = self._get_obs()
-        info = {"piece_key": (piece.agent, pid)}
+        info = {"piece_key": (piece.agent, piece.pid)}
 
         return obs, reward, terminated, truncated, info
     

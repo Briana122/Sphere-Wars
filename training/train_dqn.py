@@ -9,13 +9,16 @@ from gymnasium_env.agents.dqn.utils import make_legal_mask
 
 ## SETUP ##
 device = "cuda" if torch.cuda.is_available() else "cpu"
-num_episodes = 5
+num_episodes = 10000
 max_steps = 50
-render_every = 50 # don't render every episode for visibility purposes
+render = False      # can toggle
+# render_every = 50   # don't render every episode for visibility purposes
 render_delay = 0.3
+checkpoint_interval = 500
+log_interval = 10
 
 # Initialize weights and empty buffer
-env = GameEnv(players=2, pieces_per=1, render_mode="human")
+env = GameEnv(players=2, pieces_per=1, render_mode="human" if render else None)
 agent = DQNAgent(env, device=device)
 
 
@@ -25,28 +28,17 @@ for ep in range(num_episodes):
     state = encode_observation(obs, env.players)
     total_reward = 0
 
-    render = (ep % render_every == 0)
+    # render = (ep % render_every == 0)
 
     for step in range(max_steps):
         env.game.selected = None  # reset selected piece on each step
         legal_mask = make_legal_mask(env)
 
-        # # Debug info
-        # print("legal_mask length:", len(legal_mask))
-        # print("Legal true count:", legal_mask.sum())
-        # if legal_mask.sum() == 0:
-        #     print("ERROR: No legal actions. Current obs:", obs)
-        #     print("Current player:", env.game.current_player)
-        #     print("Pieces:", env.game.pieces)
-        #     raise RuntimeError("No legal actions for this state")
-
         # Epsilon-greedy action selection and application
         action_index, action_tuple = agent.select_action(obs, legal_mask)
-        # print(f"Chosen action index: {action_index}, legal: {legal_mask[action_index]}")
         next_obs, reward, done, truncated, info = env.step(action_tuple)
         env.game.end_turn()
 
-        # print(f"Reward from environment: {reward}")
         piece_id, dest, action_type = action_tuple
 
         # Highlight selected piece in render
@@ -66,8 +58,8 @@ for ep in range(num_episodes):
         # small negative reward for idle moves
         if action_type == 0 and before_owner == after_owner:
             reward -= 0.01
-        next_state = encode_observation(next_obs, env.players)
 
+        next_state = encode_observation(next_obs, env.players)
         agent.add_transition(state, action_index, reward, next_state, done)
 
         # Sample mini-batch and compute targets
@@ -77,7 +69,7 @@ for ep in range(num_episodes):
         obs = next_obs
         total_reward += reward
 
-        print(f"state: {state}, action: {action_index}, reward: {reward}, next_state: {next_state}")
+        # print(f"state: {state}, action: {action_index}, reward: {reward}, next_state: {next_state}")
 
         ## RENDER SELECT EPISODES ##
         if render:
@@ -96,3 +88,7 @@ for ep in range(num_episodes):
     ## SAVE CHECKPOINT ##
     if (ep + 1) % 500 == 0:
         agent.save(f"dqn_checkpoint_ep{ep+1}.pt")
+
+agent.save("gymnasium_env/agents/dqn/dqn_final_model.pt")
+
+print("Done training!")

@@ -11,13 +11,22 @@ def get_state_action_size(env):
     The Q-network needs this fixed input/output size
     '''
 
-    # obs_space = env.observation_space
-    num_tiles = env.num_tiles
-    players = env.players
-    max_pieces = env.max_pieces
+    # # obs_space = env.observation_space
+    # num_tiles = env.num_tiles
+    # players = env.players
+    # max_pieces = env.max_pieces
 
-    ownership_channels = players + 1
-    state_size = num_tiles * ownership_channels + players
+    # ownership_channels = players + 1
+    # state_size = num_tiles * ownership_channels + players
+    # action_size = max_pieces * num_tiles * 2
+
+    # state dimension from encoded observation
+    obs, _ = env.reset()
+    state_size = encode_observation(obs, env.players).shape[0]
+
+    # action dimension = max pieces per player * number of tiles * 2 (move/spawn)
+    max_pieces = env.max_pieces_per_player
+    num_tiles = env.num_tiles
     action_size = max_pieces * num_tiles * 2
     return state_size, action_size
 
@@ -47,12 +56,13 @@ def encode_observation(obs, players):
 
 ## Action Mapping Functions ##
 
-def tuple_to_index(piece_id, dest_tile, action_type, max_pieces, num_tiles):
+def tuple_to_index(action_tuple, max_pieces, num_tiles):
+    piece_id, dest_tile, action_type = action_tuple
     return ((piece_id * num_tiles) + dest_tile) * 2 + action_type
 
-def index_to_tuple(index, max_pieces, num_tiles):
-    action_type = index % 2
-    temp = index // 2
+def index_to_tuple(action_index, max_pieces, num_tiles):
+    action_type = action_index % 2
+    temp = action_index // 2
     dest_tile = temp % num_tiles
     piece_id = temp // num_tiles
     return piece_id, dest_tile, action_type
