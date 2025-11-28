@@ -9,7 +9,7 @@ from gymnasium_env.agents.dqn.utils import make_legal_mask
 
 ## SETUP ##
 device = "cuda" if torch.cuda.is_available() else "cpu"
-num_episodes = 10000
+num_episodes = 5000
 max_steps = 50
 render = False      # can toggle
 # render_every = 50   # don't render every episode for visibility purposes
