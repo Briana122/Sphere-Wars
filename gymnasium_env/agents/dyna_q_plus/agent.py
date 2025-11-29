@@ -83,7 +83,9 @@ class DynaQPlusAgent:
         *,
         alpha: float = 0.1,
         gamma: float = 0.99,
-        epsilon: float = 0.1,
+        epsilon: float = 0.9,
+        epsilon_min: float = 0.1,
+        epsilon_decay: float = 0.999,
         plan_n: int = 20,
         bonus_c: float = 0.01,
         bonus_mode: str = "sqrt",
@@ -95,6 +97,8 @@ class DynaQPlusAgent:
         self.alpha = float(alpha)
         self.gamma = float(gamma)
         self.epsilon = float(epsilon)
+        self.epsilon_min = float(epsilon_min)
+        self.epsilon_decay = float(epsilon_decay)
         self.plan_n = int(plan_n)
         self.bonus_c = float(bonus_c)
         self.bonus_mode = str(bonus_mode)
@@ -227,15 +231,24 @@ class DynaQPlusAgent:
 
     def end_episode(self) -> None:
         '''Decay epsilon after each episode'''
-        self.epsilon = max(0.02, self.epsilon * 0.999)
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
     # -------------------- Saving/Loading --------------------
     def save(self, path_npz: str) -> None:
         keys = list(self.Q.keys())
-        mats = np.stack([self.Q[k] for k in keys], axis=0) if keys else np.zeros((0, self.action_dim), dtype=np.float32)
+        mats = (
+            np.stack([self.Q[k] for k in keys], axis=0)
+            if keys
+            else np.zeros((0, self.action_dim), dtype=np.float32)
+        )
+
+        # Store keys as an object array
+        keys_arr = np.empty(len(keys), dtype=object)
+        keys_arr[:] = keys
+
         np.savez(
             path_npz,
-            keys=np.array([repr(k) for k in keys]),
+            keys=keys_arr,
             mats=mats,
             action_dim=self.action_dim,
             alpha=self.alpha,
@@ -247,20 +260,32 @@ class DynaQPlusAgent:
             t_now=self.t_now,
         )
 
-    def load(self, path_npz: str) -> None:
-        data = np.load(path_npz, allow_pickle=False)
+
+    def load(self, filename):
+        data = np.load(filename, allow_pickle=True)
         raw_keys = data["keys"]
         mats = data["mats"]
-        self.action_dim = int(data["action_dim"])
-        self.alpha = float(data["alpha"])
-        self.gamma = float(data["gamma"])
-        self.epsilon = float(data["epsilon"])
-        self.plan_n = int(data["plan_n"])
-        self.bonus_c = float(data["bonus_c"])
-        self.bonus_mode = str(data["bonus_mode"])
-        self.t_now = int(data["t_now"])
 
         self.Q.clear()
-        for i, rk in enumerate(raw_keys):
-            key = eval(rk.decode("utf-8"))
-            self.Q[key] = mats[i].astype(np.float32, copy=True)
+
+        for key, row in zip(raw_keys, mats):
+            # If we ever load an old checkpoint that stored repr() strings,
+            # fall back to eval; otherwise just use the key directly.
+            if isinstance(key, (bytes, tuple, int, float)):
+                real_key = key
+            else:
+                # old-format compatibility (repr-ed strings)
+                txt = key.decode("utf-8") if isinstance(key, (bytes, np.bytes_)) else str(key)
+                try:
+                    real_key = eval(txt)
+                except Exception:
+                    real_key = txt
+
+            self.Q[real_key] = row.astype(np.float32, copy=True)
+
+
+    def save_model(self, filename: str) -> None:
+        self.save(filename)
+
+    def load_model(self, filename: str) -> None:
+        self.load(filename)

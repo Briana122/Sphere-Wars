@@ -24,8 +24,10 @@ class DynaQPlusGymAgent(BaseAgent):
         observation_space,
         alpha: float = 0.1,
         gamma: float = 0.99,
-        epsilon: float = 0.1,
-        plan_n: int = 20,
+        epsilon: float = 0.9,
+        epsilon_min: float = 0.1,
+        epsilon_decay: float = 0.999,
+        plan_n: int = 5,
         bonus_c: float = 0.01,
         bonus_mode: str = "sqrt",
         seed: int = 0,
@@ -52,6 +54,8 @@ class DynaQPlusGymAgent(BaseAgent):
             alpha=alpha,
             gamma=gamma,
             epsilon=epsilon,
+            epsilon_min=epsilon_min,
+            epsilon_decay=epsilon_decay,
             plan_n=plan_n,
             bonus_c=bonus_c,
             bonus_mode=bonus_mode,
@@ -182,6 +186,19 @@ class DynaQPlusGymAgent(BaseAgent):
         s_vec = self.encode_state(prev_obs)
         s_next_vec = self.encode_state(next_obs)
         a_index = self.action_to_index(action)
+
+        if not next_legal_actions:
+            # No future actions possible; force terminal
+            self.dyna.step(
+                s=s_vec,
+                a=a_index,
+                r=reward,
+                s_next=s_next_vec,
+                done=True,                # force terminal
+                next_legal_mask=None,     # ignored since done=True
+            )
+            return
+
         next_mask = self.build_legal_mask(next_legal_actions)
 
         self.dyna.step(
@@ -199,3 +216,7 @@ class DynaQPlusGymAgent(BaseAgent):
 
     def load_model(self, filepath):
         self.dyna.load(filepath)
+
+    # Helper Functions
+    def get_epsilon(self):
+        return self.dyna.epsilon
