@@ -117,10 +117,18 @@ class GameEnv(gym.Env):
             return self._get_obs(), reward, terminated, truncated, {"too_many_steps": True}
 
         # Unpack action
-        pid, dest, action_type = action
-        # Get selected piece
-        piece = self.game.pieces[(self.game.current_player, pid)]
+        piece_id, dest, action_type = action
 
+        current_agent = self.game.current_player
+        piece_keys = list(self.game.pieces.keys())
+        piece_key = (current_agent, piece_id)
+
+        # Illegal action: Reference to non-existing piece index
+        if piece_id < 0 or piece_id >= len(piece_keys):
+            return self._get_obs(), reward, terminated, truncated, {"illegal": True}        
+
+        piece = self.game.pieces[piece_key]
+        
         # Illegal action: Must act only with current_player's piece
         if piece.agent != self.game.current_player:
             truncated = True
@@ -133,7 +141,7 @@ class GameEnv(gym.Env):
             return self._get_obs(), reward, terminated, info
 
         # Identify piece selected by agent that owns the piece and the piece id
-        self.game.selected = (piece.agent, pid)
+        self.game.selected = (piece.agent, piece.pid)
 
         captured_new_tile = False
         spawned = False
@@ -143,7 +151,7 @@ class GameEnv(gym.Env):
             if self.game.resources[piece.agent] >= SPAWN_COST:
                 spawned = self.game.spawn_piece(piece.agent, cost=SPAWN_COST)
             if not spawned:
-                # If spawn fails, fall back to MOVE as per your original logic
+                # If spawn fails, fall back to MOVE
                 moved, captured_new_tile = self._apply_move(piece, dest)
             else:
                 if self.render_mode == "human":
@@ -171,7 +179,7 @@ class GameEnv(gym.Env):
             reward += WIN_REWARD
 
         obs = self._get_obs()
-        info = {"piece_key": (piece.agent, pid)}
+        info = {"piece_key": (piece.agent, piece.pid)}
 
         return obs, reward, terminated, truncated, info
     
