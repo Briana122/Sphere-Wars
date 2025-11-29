@@ -7,20 +7,9 @@ from gymnasium_env.agents.actor_critic.ac_agent import ActorCriticAgent
 from gymnasium_env.utils.constants import SUBDIV
 
 # Path of the pre-trained model you want to test
+MODEL_PATH = r"gymnasium_env\agents\actor_critic\ac_final_model.pt"
 
-# MODEL_PATH = os.path.join(
-#     "checkpoints",
-#     "lr3e-4_ent0.02",
-#     "lr3e-4_ent0.02_final.pt",
-# )
-
-# MODEL_PATH = r"checkpoints\base_lr3e-4_ent0.01\base_lr3e-4_ent0.01_final.pt"
-
-MODEL_PATH = r"checkpoints\lr3e-4_ent0.005\lr3e-4_ent0.005_final.pt"
-
-# Number of evaluation games
-NUM_GAMES = 20   # increase to 100+ for more stable stats
-
+NUM_GAMES = 100
 
 def evaluate_model(model_path: str, num_games: int = NUM_GAMES):
     # Sanity check
@@ -64,8 +53,7 @@ def evaluate_model(model_path: str, num_games: int = NUM_GAMES):
                     obs=obs,
                     legal_actions=legal_actions,
                     current_player=0,
-                    greedy=True,
-                    # greedy=False,
+                    greedy=False,
                 )
             else:
                 # Random policy as Player 1

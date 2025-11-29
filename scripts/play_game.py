@@ -100,7 +100,7 @@ def main():
                 obs=obs,
                 legal_actions=legal_actions,
                 current_player=current,
-                greedy=True,  # use greedy policy for evaluation
+                greedy=False,  # use greedy policy for evaluation
             )
         else:
             # Other agents use the simpler interface and return just the action

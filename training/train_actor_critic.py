@@ -216,7 +216,26 @@ def train_stage(
         "opponent_types": [],
     }
 
+    # ---------------------------------------------------------
+    # Entropy annealing setup
+    # ---------------------------------------------------------
+    initial_entropy = entropy_coef
+    final_entropy = 1e-4
+    decay_start = int(0.3 * num_episodes)
+    decay_end   = int(0.9 * num_episodes)
+
     for ep in range(1, num_episodes + 1):
+        # Update entropy coefficient for this episode
+        if ep < decay_start:
+            current_ent = initial_entropy
+        elif ep > decay_end:
+            current_ent = final_entropy
+        else:
+            # linear decay between initial_entropy and final_entropy
+            t = (ep - decay_start) / float(decay_end - decay_start)
+            current_ent = initial_entropy + t * (final_entropy - initial_entropy)
+        ac_agent.entropy_coef = current_ent
+
         obs, _ = env.reset()
         done = False
 
@@ -365,7 +384,8 @@ def train_stage(
                 f"WinRate {recent_winrate:.3f} | "
                 f"Loss {loss:.4f} | "
                 f"VLoss {vloss:.4f} | "
-                f"Ent {ent:.4f} | Winner: {env.game.winner}"
+                f"Ent {ent:.4f} | EntCoef {ac_agent.entropy_coef:.5f} | "
+                f"Winner: {env.game.winner}"
             )
         else:
             loss = vloss = ent = np.nan
@@ -373,7 +393,8 @@ def train_stage(
                 f"[subdiv={subdiv}] Ep {ep:5d} | Opp {opponent_type:9s} | "
                 f"Ret {ep_return:7.2f} | "
                 f"AvgRet {recent_avg:7.2f} | "
-                f"WinRate {recent_winrate:.3f} | (no update)"
+                f"WinRate {recent_winrate:.3f} | "
+                f"(no update) | EntCoef {ac_agent.entropy_coef:.5f}"
             )
 
         # --- Save to history for plotting/tuning ---
@@ -406,204 +427,3 @@ def train_stage(
 
     env.close()
     return history, final_path
-
-
-def plot_results(all_histories, save_dir, title_suffix=""):
-    """
-    all_histories: list of (label, history_dict)
-    """
-    ensure_dir(save_dir)
-
-    # Plot AvgReturn
-    plt.figure(figsize=(10, 5))
-    for label, hist in all_histories:
-        episodes = hist["episodes"]
-        avg_ret = hist["avg_returns"]
-        plt.plot(episodes, avg_ret, label=label)
-    plt.xlabel("Episode")
-    plt.ylabel("Average Return (moving)")
-    plt.title(f"Average Return over Episodes {title_suffix}")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    avg_ret_path = os.path.join(save_dir, "avg_return_comparison.png")
-    plt.savefig(avg_ret_path)
-    print(f"Saved plot: {avg_ret_path}")
-    plt.close()
-
-    # Plot WinRate
-    plt.figure(figsize=(10, 5))
-    for label, hist in all_histories:
-        episodes = hist["episodes"]
-        winrate = hist["winrates"]
-        plt.plot(episodes, winrate, label=label)
-    plt.xlabel("Episode")
-    plt.ylabel("Win Rate (running, Player 0)")
-    plt.title(f"Win Rate over Episodes {title_suffix}")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    winrate_path = os.path.join(save_dir, "winrate_comparison.png")
-    plt.savefig(winrate_path)
-    print(f"Saved plot: {winrate_path}")
-    plt.close()
-
-
-def summarize_best_config(all_histories):
-    """
-    Enhanced logic to pick the "best" config.
-    For each config, we compute:
-      - final_avg_ret: last moving-average return
-      - final_winrate: last running winrate
-      - mean_last10_ret
-      - mean_last10_win
-      - score = mean_last10_ret + 10 * mean_last10_win
-    Then we pick the config with the highest score.
-    """
-    best_label = None
-    best_score = -1e9
-    best_details = None
-
-    for label, hist in all_histories:
-        avg_ret = np.array(hist["avg_returns"], dtype=np.float32)
-        winrate = np.array(hist["winrates"], dtype=np.float32)
-
-        if len(avg_ret) == 0:
-            continue
-
-        final_avg_ret = float(avg_ret[-1])
-        final_winrate = float(winrate[-1])
-
-        last_n = min(10, len(avg_ret))
-        mean_last10_ret = float(np.mean(avg_ret[-last_n:]))
-        mean_last10_win = float(np.mean(winrate[-last_n:]))
-
-        score = mean_last10_ret + 10.0 * mean_last10_win
-
-        print(
-            f"Config {label}: "
-            f"final AvgRet={final_avg_ret:.3f}, final WinRate={final_winrate:.3f}, "
-            f"mean_last10_ret={mean_last10_ret:.3f}, mean_last10_win={mean_last10_win:.3f}, "
-            f"score={score:.3f}"
-        )
-
-        if score > best_score:
-            best_score = score
-            best_label = label
-            best_details = {
-                "final_avg_ret": final_avg_ret,
-                "final_winrate": final_winrate,
-                "mean_last10_ret": mean_last10_ret,
-                "mean_last10_win": mean_last10_win,
-            }
-
-    return best_label, best_score, best_details
-
-
-if __name__ == "__main__":
-    # Shared/defaults
-    max_steps_per_episode = MAX_STEPS
-    save_dir = "checkpoints"
-    subdiv = SUBDIV  # board size from your constants
-
-    # --- Hyperparameter configs to try ---
-    configs = [
-        {
-            "name": "base_lr3e-4_ent0.01",
-            "lr": 3e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.01,
-            "episodes": NUM_EPISODES,
-        },
-        {
-            "name": "lr1e-4_ent0.01",
-            "lr": 1e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.01,
-            "episodes": NUM_EPISODES,
-        },
-        {
-            "name": "lr3e-4_ent0.02",
-            "lr": 3e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.02,
-            "episodes": NUM_EPISODES,
-        },
-        {
-            "name": "lr3e-4_ent0.005",
-            "lr": 3e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.005,
-            "episodes": NUM_EPISODES,
-        },
-        {
-            "name": "lr5e-4_ent0.01",
-            "lr": 5e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.01,
-            "episodes": NUM_EPISODES,
-        },
-    ]
-
-    all_histories = []
-
-    for cfg in configs:
-        print("\n========================================")
-        print(f"Running config: {cfg['name']}")
-        print("  lr =", cfg["lr"])
-        print("  gamma =", cfg["gamma"])
-        print("  value_coef =", cfg["value_coef"])
-        print("  entropy_coef =", cfg["entropy_coef"])
-        print("  episodes =", cfg["episodes"])
-        print("========================================")
-
-        history, final_model_path = train_stage(
-            subdiv=subdiv,
-            num_episodes=cfg["episodes"],
-            max_steps_per_episode=max_steps_per_episode,
-            lr=cfg["lr"],
-            gamma=cfg["gamma"],
-            value_coef=cfg["value_coef"],
-            entropy_coef=cfg["entropy_coef"],
-            save_dir=os.path.join(save_dir, cfg["name"]),
-            save_prefix=cfg["name"],
-            load_model_path=None,  # always fresh for fair comparison
-            snapshot_interval=max(1000, cfg["episodes"] // 5),
-        )
-
-        all_histories.append((cfg["name"], history))
-
-        # Print final metrics for this config
-        final_avg_ret = history["avg_returns"][-1]
-        final_winrate = history["winrates"][-1]
-        print(
-            f"Config {cfg['name']} finished. "
-            f"Final AvgRet: {final_avg_ret:.3f}, Final WinRate: {final_winrate:.3f}"
-        )
-        print(f"Final model saved at: {final_model_path}")
-
-    # Plot comparison across configs
-    plot_results(
-        all_histories,
-        save_dir=os.path.join(save_dir, "plots"),
-        title_suffix=f"(subdiv={subdiv})",
-    )
-
-    # Enhanced summary of best config
-    best_label, best_score, best_details = summarize_best_config(all_histories)
-
-    print("\nTraining complete.")
-    if best_label is not None:
-        print(
-            f"Best config (combined score) : {best_label} "
-            f"(score={best_score:.3f}, "
-            f"final AvgRet={best_details['final_avg_ret']:.3f}, "
-            f"final WinRate={best_details['final_winrate']:.3f})"
-        )
-    else:
-        print("No valid configs produced history; check for errors.")
