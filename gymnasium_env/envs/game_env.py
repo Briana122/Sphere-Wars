@@ -36,7 +36,8 @@ class GameEnv(gym.Env):
         self.max_pieces_per_player = math.floor(self.num_tiles / 4)
 
         self.tiles_to_win = int(math.ceil(self.num_tiles / 2))
-        print(f"Goal is {self.tiles_to_win} tiles, max pieces is {self.max_pieces_per_player}")
+        if self.render_mode == "human":
+            print(f"Goal is {self.tiles_to_win} tiles, max pieces is {self.max_pieces_per_player}")
 
         self.action_space = spaces.Tuple((
             spaces.Discrete(self.max_pieces_per_player),
@@ -105,15 +106,15 @@ class GameEnv(gym.Env):
     def step(self, action):
         """Take an action = (piece_id, dest_tile, action_type)."""
 
+        reward = -0.1
+        self.step_count += 1 
+        terminated = truncated = False
+
         # Truncate the game/episode once max steps reached
         if self.step_count >= (self.max_steps) and not terminated and not truncated:
             truncated = True
             reward = 0.0
             return self._get_obs(), reward, terminated, truncated, {"too_many_steps": True}
-        
-        reward = -0.1
-        self.step_count += 1 
-        terminated = truncated = False
 
         # Unpack action
         piece_id, dest, action_type = action
@@ -132,10 +133,11 @@ class GameEnv(gym.Env):
         if piece.agent != self.game.current_player:
             truncated = True
             info = truncated, {"illegal": True}
-            print("here2")
-            print("piece agent:", piece.agent)
-            print("pid", piece.pid)
-            print(self.game.current_player)
+            if self.render_mode == "human":
+                print("here2")
+                print("piece agent:", piece.agent)
+                print("pid", piece.pid)
+                print(self.game.current_player)
             return self._get_obs(), reward, terminated, info
 
         # Identify piece selected by agent that owns the piece and the piece id
@@ -152,7 +154,12 @@ class GameEnv(gym.Env):
                 # If spawn fails, fall back to MOVE
                 moved, captured_new_tile = self._apply_move(piece, dest)
             else:
-                print(f"Agent: {piece.agent} \t Action: Spawn \t\t Resources: {self.game.resources[piece.agent]} ", end="")
+                if self.render_mode == "human":
+                    print(
+                        f"Agent: {piece.agent} \t Action: Spawn \t\t "
+                        f"Resources: {self.game.resources[piece.agent]} ",
+                        end=""
+                    )
         else:
             # MOVE
             moved, captured_new_tile = self._apply_move(piece, dest)
@@ -160,9 +167,10 @@ class GameEnv(gym.Env):
         if captured_new_tile:
             reward += CAPTURE_REWARD
 
-        print(f"\t\tReward: {reward} \t ", end="")
-        if spawned or moved:
-            print(f"Successful Action")
+        if self.render_mode == "human":
+            print(f"\t\tReward: {reward} \t ", end="")
+            if spawned or moved:
+                print("Successful Action")
 
         # ---------------------- Check victory ----------------------
 
@@ -234,7 +242,12 @@ class GameEnv(gym.Env):
 
         moved, captured_new_tile = self.game.move(piece, dest)
 
-        print(f"Agent: {piece.agent} \t Action: Move \t\t Resources: {self.game.resources[piece.agent]} ", end="")
+        if self.render_mode == "human":
+            print(
+                f"Agent: {piece.agent} \t Action: Move \t\t "
+                f"Resources: {self.game.resources[piece.agent]} ",
+                end=""
+            )
 
         return moved, captured_new_tile
 

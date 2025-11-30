@@ -216,7 +216,26 @@ def train_stage(
         "opponent_types": [],
     }
 
+    # ---------------------------------------------------------
+    # Entropy annealing setup
+    # ---------------------------------------------------------
+    initial_entropy = entropy_coef
+    final_entropy = 1e-4
+    decay_start = int(0.3 * num_episodes)
+    decay_end   = int(0.9 * num_episodes)
+
     for ep in range(1, num_episodes + 1):
+        # Update entropy coefficient for this episode
+        if ep < decay_start:
+            current_ent = initial_entropy
+        elif ep > decay_end:
+            current_ent = final_entropy
+        else:
+            # linear decay between initial_entropy and final_entropy
+            t = (ep - decay_start) / float(decay_end - decay_start)
+            current_ent = initial_entropy + t * (final_entropy - initial_entropy)
+        ac_agent.entropy_coef = current_ent
+
         obs, _ = env.reset()
         done = False
 
@@ -365,7 +384,8 @@ def train_stage(
                 f"WinRate {recent_winrate:.3f} | "
                 f"Loss {loss:.4f} | "
                 f"VLoss {vloss:.4f} | "
-                f"Ent {ent:.4f} | Winner: {env.game.winner}"
+                f"Ent {ent:.4f} | EntCoef {ac_agent.entropy_coef:.5f} | "
+                f"Winner: {env.game.winner}"
             )
         else:
             loss = vloss = ent = np.nan
@@ -373,7 +393,8 @@ def train_stage(
                 f"[subdiv={subdiv}] Ep {ep:5d} | Opp {opponent_type:9s} | "
                 f"Ret {ep_return:7.2f} | "
                 f"AvgRet {recent_avg:7.2f} | "
-                f"WinRate {recent_winrate:.3f} | (no update)"
+                f"WinRate {recent_winrate:.3f} | "
+                f"(no update) | EntCoef {ac_agent.entropy_coef:.5f}"
             )
 
         # --- Save to history for plotting/tuning ---
@@ -406,7 +427,6 @@ def train_stage(
 
     env.close()
     return history, final_path
-
 
 def plot_results(all_histories, save_dir, title_suffix=""):
     """
@@ -508,14 +528,14 @@ if __name__ == "__main__":
 
     # --- Hyperparameter configs to try ---
     configs = [
-        {
-            "name": "base_lr3e-4_ent0.01",
-            "lr": 3e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.01,
-            "episodes": NUM_EPISODES,
-        },
+        # {
+        #     "name": "base_lr3e-4_ent0.01",
+        #     "lr": 3e-4,
+        #     "gamma": 0.99,
+        #     "value_coef": 0.5,
+        #     "entropy_coef": 0.01,
+        #     "episodes": NUM_EPISODES,
+        # },
         {
             "name": "lr1e-4_ent0.01",
             "lr": 1e-4,
@@ -524,30 +544,30 @@ if __name__ == "__main__":
             "entropy_coef": 0.01,
             "episodes": NUM_EPISODES,
         },
-        {
-            "name": "lr3e-4_ent0.02",
-            "lr": 3e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.02,
-            "episodes": NUM_EPISODES,
-        },
-        {
-            "name": "lr3e-4_ent0.005",
-            "lr": 3e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.005,
-            "episodes": NUM_EPISODES,
-        },
-        {
-            "name": "lr5e-4_ent0.01",
-            "lr": 5e-4,
-            "gamma": 0.99,
-            "value_coef": 0.5,
-            "entropy_coef": 0.01,
-            "episodes": NUM_EPISODES,
-        },
+        # {
+        #     "name": "lr3e-4_ent0.02",
+        #     "lr": 3e-4,
+        #     "gamma": 0.99,
+        #     "value_coef": 0.5,
+        #     "entropy_coef": 0.02,
+        #     "episodes": NUM_EPISODES,
+        # },
+        # {
+        #     "name": "lr3e-4_ent0.005",
+        #     "lr": 3e-4,
+        #     "gamma": 0.99,
+        #     "value_coef": 0.5,
+        #     "entropy_coef": 0.005,
+        #     "episodes": NUM_EPISODES,
+        # },
+        # {
+        #     "name": "lr5e-4_ent0.01",
+        #     "lr": 5e-4,
+        #     "gamma": 0.99,
+        #     "value_coef": 0.5,
+        #     "entropy_coef": 0.01,
+        #     "episodes": NUM_EPISODES,
+        # },
     ]
 
     all_histories = []

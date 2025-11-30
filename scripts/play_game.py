@@ -4,6 +4,7 @@ import time
 import os
 from gymnasium_env.envs.game_env import GameEnv
 from gymnasium_env.agents.actor_critic.ac_agent import ActorCriticAgent
+from gymnasium_env.agents.dyna_q_plus.dyna_gym_agent import DynaQPlusGymAgent
 from gymnasium_env.agents import make_agent
 from gymnasium_env.utils.action_utils import get_legal_actions
 
@@ -18,13 +19,32 @@ def main():
     parser.add_argument("--sleep", type=float, default=0.02, help="Seconds to sleep between frames for rendering.")
     args = parser.parse_args()
 
+    # Handle "latest" model shortcut
+    base_dir = os.path.dirname(__file__)  # .../scripts
+    default_dyna_model = os.path.abspath(
+        os.path.join(base_dir, "..", "models_dyna", "dyna_q_plus_latest.npz")
+    )
+
+    if args.agent0_model == "latest":
+        args.agent0_model = default_dyna_model
+    if args.agent1_model == "latest":
+        args.agent1_model = default_dyna_model
+
+
     # Create environment with rendering enabled
     env = GameEnv(players=args.players, pieces_per=args.pieces_per, render_mode="human")
     obs, _ = env.reset()
 
     # Create one agent per player
-    agent0 = make_agent(args.agent0_type, env.action_space, env.observation_space)
-    agent1 = make_agent(args.agent1_type, env.action_space, env.observation_space)
+    if args.agent0_type.lower() == "dyna_q_plus":
+        agent0 = DynaQPlusGymAgent(env.action_space, env.observation_space)
+    else:
+        agent0 = make_agent(args.agent0_type, env.action_space, env.observation_space)
+
+    if args.agent1_type.lower() == "dyna_q_plus":
+        agent1 = DynaQPlusGymAgent(env.action_space, env.observation_space)
+    else:
+        agent1 = make_agent(args.agent1_type, env.action_space, env.observation_space)
 
     # Load models if provided
     if args.agent0_model and os.path.exists(args.agent0_model):
@@ -43,7 +63,7 @@ def main():
 
     # If agents have epsilon (like Q-learning FA), use greedy play:
     if hasattr(agent0, "epsilon"):
-        agent0.epsilon = 0.0
+        agent0.epsilon = 1.0
     if hasattr(agent1, "epsilon"):
         agent1.epsilon = 0.0
 
@@ -80,7 +100,7 @@ def main():
                 obs=obs,
                 legal_actions=legal_actions,
                 current_player=current,
-                greedy=True,  # use greedy policy for evaluation
+                greedy=False,  # use greedy policy for evaluation
             )
         else:
             # Other agents use the simpler interface and return just the action
