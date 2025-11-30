@@ -105,6 +105,8 @@ class GameEnv(gym.Env):
 
     def step(self, action):
         """Take an action = (piece_id, dest_tile, action_type)."""
+        terminated = False
+        truncated = False
 
         reward = -0.1
         self.step_count += 1 
