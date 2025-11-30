@@ -20,16 +20,11 @@ def evaluate_dqn_vs_random(model_path: str, num_games: int = NUM_GAMES):
     print(f"Evaluating DQN model on {num_games} games using device: {device}")
     print(f"Model path: {model_path}")
 
-    # Create a temporary env just to initialize the agent with correct spaces
     tmp_env = GameEnv(players=2, pieces_per=1, render_mode=None)
     agent = DQNAgent(tmp_env, device=device)
-    # agent.load(model_path)
 
-    state_dict = torch.load(MODEL_PATH, map_location=device, weights_only=False)
-    agent.policy_net.load_state_dict(state_dict)
-    agent.target_net.load_state_dict(agent.policy_net.state_dict())
-
-
+    # Load the DQN (policy + target + epsilon settings)
+    agent.load(model_path)
     tmp_env.close()
 
     dqn_wins = 0
@@ -39,7 +34,6 @@ def evaluate_dqn_vs_random(model_path: str, num_games: int = NUM_GAMES):
     for game_idx in range(num_games):
         env = GameEnv(players=2, pieces_per=1, render_mode=None)
         obs, _ = env.reset()
-        state = encode_observation(obs, env.players)
         done = False
         step_count = 0
 
@@ -48,26 +42,37 @@ def evaluate_dqn_vs_random(model_path: str, num_games: int = NUM_GAMES):
             legal_mask = make_legal_mask(env)
             legal_actions = [i for i, valid in enumerate(legal_mask) if valid]
 
+            # No legal actions
             if not legal_actions:
                 env.game.end_turn()
                 continue
 
             if current_player == 0:
-                # DQN plays as Player 0
+                # always greedy (DQN player)
+                encoded_state = encode_observation(obs, env.players)
                 with torch.no_grad():
-                    action_index, action_tuple = agent.select_action(obs, legal_mask)
+                    action_index, action_tuple = agent.select_action(
+                        encoded_state,
+                        legal_mask,
+                        greedy=True
+                    )
             else:
-                # Random plays as Player 1
-                action_tuple = random.choice(legal_actions)
-                action_tuple = index_to_tuple(action_tuple, env.max_pieces_per_player, env.num_tiles)
+                # random player
+                action_index = random.choice(legal_actions)
+                action_tuple = index_to_tuple(
+                    action_index,
+                    env.max_pieces_per_player,
+                    env.num_tiles
+                )
 
+            # Take environment step
             obs, reward, terminated, truncated, info = env.step(action_tuple)
+
             env.game.end_turn()
-            state = encode_observation(obs, env.players)
+
             done = terminated or truncated
             step_count += 1
 
-        # Game finished
         winner = env.game.winner
         print(f"Game {game_idx + 1}/{num_games} Winner: {winner}")
 

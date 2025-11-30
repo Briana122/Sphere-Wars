@@ -60,7 +60,21 @@ class DQNAgent:
         return self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
                np.exp(-1.0 * self.steps_done / self.epsilon_decay)
 
-    def select_action(self, obs, legal_mask=None):
+    def select_action(self, obs, legal_mask=None, greedy=False):
+        if greedy: # totally skip exploration
+            state = encode_observation(obs, self.env.players)
+            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(self.device)
+            with torch.no_grad():
+                q_values = self.policy_net(state)
+                q_values = q_values.squeeze(0).cpu().numpy()
+
+            masked_q = np.where(legal_mask, q_values, -1e9)
+
+            action_index = int(np.argmax(masked_q))
+            action_tuple = index_to_tuple(action_index, self.env.max_pieces_per_player, self.env.num_tiles)
+            return action_index, action_tuple
+        
+        # epsilon-greedy
         eps_threshold = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
                     np.exp(-1.0 * self.steps_done / self.epsilon_decay)
         self.steps_done += 1
