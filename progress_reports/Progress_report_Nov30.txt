@@ -20,8 +20,12 @@ Kiara:
 - Trained the DQN (commit 6062829).
 - Filmed my portion of the demo.
 Usman:
+- Implemented DynaQ+ (Commit af3b20d)
+- Simplified DynaQ+ State Encoder (As The First Implementation Was Too Complex To Revisit Any Particular State)
+- Created Training Script For DynaQ+ (Vs Random and Frozen Snapshot of Agent)
+- Created Wrapper Class For Agent in order to achieve encapsulation
+- Added Small Reward for Successful Spawn
 - Edited all the demo components together to make one final demo video
-- 
 Isen:
 - 
 
