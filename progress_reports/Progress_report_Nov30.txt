@@ -17,7 +17,8 @@ Briana:
 - Create slides for results demo and filmed my portion of the demo video
 Kiara:
 - Implemented a Deep Q-Network (commit 103a5a2).
-- Trained the DQN (commit __).
+- Trained the DQN (commit 6062829).
+- Filmed my portion of the demo.
 Usman:
 - Edited all the demo components together to make one final demo video
 - 
