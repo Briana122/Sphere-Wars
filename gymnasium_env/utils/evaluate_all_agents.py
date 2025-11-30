@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from gymnasium_env.agents import make_agent
 
+from gymnasium_env.agents.dyna_q_plus.dyna_gym_agent import DynaQPlusGymAgent
 from gymnasium_env.envs.game_env import GameEnv
 from gymnasium_env.utils.action_utils import get_legal_actions
 from gymnasium_env.utils.constants import SUBDIV, MAX_STEPS
@@ -15,6 +16,19 @@ from gymnasium_env.agents.actor_critic.ac_agent import ActorCriticAgent
 from gymnasium_env.agents.random_agent import RandomAgent
 
 
+def act_dqplus(agent, env, obs):
+    """
+    Dyna-Q+ agent (DynaQPlusGymAgent wrapper)
+    uses:
+        agent.select_action(obs, legal_actions)
+    which returns a tuple or None.
+    """
+
+    legal_actions = get_legal_actions(env)
+    if not legal_actions:
+        return None
+
+    return agent.select_action(obs, legal_actions)
 
 def act_mcts(agent, env, obs):
     agent.set_env(env)
@@ -80,6 +94,27 @@ def act_random(agent, env, obs):
     if not legal_actions:
         return None
     return random.choice(legal_actions)
+
+
+def build_dqplus_agent(model_path, subdiv):
+    env = GameEnv(players=2, pieces_per=1, subdiv=subdiv)
+
+    a = DynaQPlusGymAgent(
+        action_space=env.action_space,
+        observation_space=env.observation_space,
+        alpha=0.1,
+        gamma=0.99,
+        epsilon=0.0, 
+        epsilon_min=0.0,
+        epsilon_decay=1.0,
+        plan_n=20,
+        bonus_c=0.01,
+        bonus_mode="sqrt",
+    )
+
+    a.load_model(model_path)
+    env.close()
+    return ("DynaQPlus", a, act_dqplus)
 
 
 def build_mcts_agent(model_path, subdiv):
@@ -174,6 +209,10 @@ def evaluate_all(model_paths, subdiv=SUBDIV, games_per_pair=30):
         agents.append(build_dqn_agent(model_paths["dqn"], subdiv))
     if "ac" in model_paths:
         agents.append(build_ac_agent(model_paths["ac"], subdiv))
+    if "dqplus" in model_paths:
+        agents.append(build_dqplus_agent(model_paths["dqplus"], subdiv))
+
+
 
     agents.append(build_random_agent(subdiv))
 
@@ -217,9 +256,10 @@ def evaluate_all(model_paths, subdiv=SUBDIV, games_per_pair=30):
 
 if __name__ == "__main__":
     model_paths = {
-        "mcts": "mcts_checkpoints/mcts_nn_modelok.pt",
-        "dqn":  "gymnasium_env/agents/dqn/dqn_final_model.pt",
-        "ac":   "gymnasium_env/agents/actor_critic/ac_final_model.pt",
+        "mcts":   "mcts_checkpoints/mcts_nn_modelok.pt",
+        "dqn":    "gymnasium_env/agents/dqn/dqn_final_model.pt",
+        "ac":     "gymnasium_env/agents/actor_critic/ac_final_model.pt",
+        "dqplus": "gymnasium_env/agents/dyna_q_plus/dqplus_model.npz",
     }
 
     evaluate_all(model_paths, subdiv=2, games_per_pair=20)
